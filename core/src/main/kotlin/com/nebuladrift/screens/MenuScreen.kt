@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.FitViewport
+import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.util.Constants
 import com.nebuladrift.NebulaDriftGame
@@ -65,6 +66,9 @@ class MenuScreen(
         val prefs = Gdx.app.getPreferences("nebula-drift")
         highScore = prefs.getInteger("highScore", 0)
 
+        // Start background music (no-op if no assets)
+        AudioManager.playMusic(Constants.MUSIC_FILENAME)
+
         Gdx.input.inputProcessor = object : InputAdapter() {
             override fun touchDown(
                 screenX: Int,
@@ -78,7 +82,7 @@ class MenuScreen(
                 val wy = vec.y
 
                 if (playButton.contains(wx, wy)) {
-                    game.setScreen<GameScreen>()
+                    game.startTransition { game.setScreen<GameScreen>() }
                     return true
                 }
                 return false

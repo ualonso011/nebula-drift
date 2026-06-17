@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.FitViewport
+import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.util.Constants
 import com.nebuladrift.NebulaDriftGame
@@ -83,6 +84,13 @@ class GameOverScreen(
             isNewRecord = false
         }
 
+        // Play game-over SFX
+        AudioManager.stopMusic()
+        AudioManager.playSound(Constants.SFX_GAME_OVER)
+        if (isNewRecord) {
+            AudioManager.playSound(Constants.SFX_NEW_RECORD)
+        }
+
         inputProcessor = object : InputAdapter() {
             override fun touchDown(
                 screenX: Int,
@@ -99,12 +107,12 @@ class GameOverScreen(
                 return when {
                     retryButton.bounds.contains(wx, wy) -> {
                         GameSession.reset()
-                        game.setScreen<GameScreen>()
+                        game.startTransition { game.setScreen<GameScreen>() }
                         true
                     }
                     menuButton.bounds.contains(wx, wy) -> {
                         GameSession.reset()
-                        game.setScreen<MenuScreen>()
+                        game.startTransition { game.setScreen<MenuScreen>() }
                         true
                     }
                     else -> false

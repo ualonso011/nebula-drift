@@ -81,9 +81,13 @@ class CollisionSystem : GameSystem {
 
         for (asteroid in context.asteroids) {
             if (overlap(ship, asteroid)) {
-                ship.takeDamage()
-                context.events.add(GameEvent.ShipHit(ship.lives))
-                toRemove.add(asteroid)
+                if (ship.takeDamage()) {
+                    context.events.add(GameEvent.ShipHit(ship, ship.lives))
+                    if (ship.isDestroyed) {
+                        context.events.add(GameEvent.ShipDestroyed(ship))
+                    }
+                    toRemove.add(asteroid)
+                }
                 break // Only one collision per frame
             }
         }
@@ -130,9 +134,13 @@ class CollisionSystem : GameSystem {
 
         for (enemy in context.enemies) {
             if (overlap(ship, enemy)) {
-                ship.takeDamage()
-                context.events.add(GameEvent.ShipHit(ship.lives))
-                toRemove.add(enemy)
+                if (ship.takeDamage()) {
+                    context.events.add(GameEvent.ShipHit(ship, ship.lives))
+                    if (ship.isDestroyed) {
+                        context.events.add(GameEvent.ShipDestroyed(ship))
+                    }
+                    toRemove.add(enemy)
+                }
                 break
             }
         }

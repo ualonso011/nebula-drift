@@ -48,7 +48,13 @@ sealed class GameEvent {
     data class AsteroidDestroyed(val asteroid: Asteroid, val points: Int) : GameEvent()
 
     /** Ship was hit: [remainingLives] left. */
-    data class ShipHit(val remainingLives: Int) : GameEvent()
+    data class ShipHit(val ship: Ship, val remainingLives: Int) : GameEvent()
+
+    /** Ship was destroyed (last life lost). */
+    data class ShipDestroyed(val ship: Ship) : GameEvent()
+
+    /** A laser was fired by the player. */
+    data class LaserFired(val laser: Laser) : GameEvent()
 
     /** A laser hit an asteroid (before damage resolution). */
     data class LaserAsteroidHit(val laser: Laser, val asteroid: Asteroid) : GameEvent()
