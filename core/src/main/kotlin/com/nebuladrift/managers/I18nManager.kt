@@ -57,8 +57,8 @@ class I18nManager {
     fun getLocale(): String = currentLocale
 
     private fun loadBundle(locale: String) {
-        val file = Gdx.files.internal("i18n/messages_$locale")
-        bundle = I18NBundle.createBundle(file)
+        val file = Gdx.files.internal("i18n/messages")
+        bundle = I18NBundle.createBundle(file, java.util.Locale(locale))
     }
 
     /**
