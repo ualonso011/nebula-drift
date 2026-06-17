@@ -717,6 +717,7 @@ object SpriteGenerator {
         }
 
         val texture = Texture(packed)
+        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
         packed.dispose()
 
         // Build region map
