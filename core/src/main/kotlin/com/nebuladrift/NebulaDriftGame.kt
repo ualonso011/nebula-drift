@@ -57,7 +57,7 @@ class NebulaDriftGame : KtxGame<KtxScreen>() {
     private var pendingSwitchAction: (() -> Unit)? = null
 
     /** Batch used exclusively for rendering the transition overlay. */
-    private val transitionBatch = SpriteBatch()
+    private lateinit var transitionBatch: SpriteBatch
 
     /** 1×1 white texture used as the overlay fill rect. */
     private var whiteTexture: Texture? = null
@@ -105,6 +105,11 @@ class NebulaDriftGame : KtxGame<KtxScreen>() {
             whiteTexture = Texture(pix)
             pix.dispose()
             Gdx.app.log("NebulaDriftGame", "Textura blanca creada")
+
+            // Create transition batch (must be done after GL context is ready)
+            Gdx.app.log("NebulaDriftGame", "Creando transitionBatch...")
+            transitionBatch = SpriteBatch()
+            Gdx.app.log("NebulaDriftGame", "transitionBatch creado")
 
             // Screens are created here so they share the same game reference.
             // GameScreen and GameOverScreen access i18n through the game or

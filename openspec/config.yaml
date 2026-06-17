@@ -1,0 +1,67 @@
+# openspec/config.yaml — Nebula Drift
+schema: spec-driven
+
+context: |
+  Project: Nebula Drift
+  Type: Android game — space survival/shooter with Flappy Bird-style mechanics,
+        targeting mobile quality level of Clash Royale / Brawl Stars.
+  Stack: Undecided (greenfield). Candidates: libGDX (Kotlin/Java), Unity (C#),
+         raw Canvas/SurfaceView, or Jetpack Compose.
+  Arch:  Not yet established.
+  Style: Not yet established.
+
+  # Agent conventions
+  Execution mode: auto
+  Chained PR strategy: ask-always
+  Review budget: 400 lines
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Proposals must justify tech stack choice with tradeoffs
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing code patterns once established
+    tdd: false
+    test_command: ""    # No test runner detected yet
+  verify:
+    test_command: ""    # To be defined after stack selection
+    build_command: ""   # To be defined after stack selection
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: false
+  reason: "No test runner detected — project is greenfield with no toolchain installed yet. Strict TDD will be enabled once a stack and test framework are chosen."
+  layers:
+    unit:
+      available: false
+      tool: ""
+    integration:
+      available: false
+      tool: ""
+    e2e:
+      available: false
+      tool: ""
+  coverage:
+    available: false
+    command: ""
+  quality:
+    linter:
+      available: false
+      command: ""
+    type_checker:
+      available: false
+      command: ""
+    formatter:
+      available: false
+      command: ""
