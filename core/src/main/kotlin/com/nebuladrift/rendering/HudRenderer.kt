@@ -1,0 +1,74 @@
+package com.nebuladrift.rendering
+
+import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.nebuladrift.entities.Ship
+import com.nebuladrift.managers.I18nManager
+
+/**
+ * Renders the gameplay HUD overlay (lives, score, timer).
+ *
+ * Uses a separate [OrthographicCamera] in screen-pixel space so that
+ * text is crisp regardless of the game-world viewport. Call [resize]
+ * on every screen resize to keep the HUD camera in sync.
+ */
+class HudRenderer {
+
+    private val batch = SpriteBatch()
+    private val font = BitmapFont()
+    private val hudCamera = OrthographicCamera()
+    private val margin = 12f
+    private val lineHeight = 28f
+
+    /** Call on screen resize to update HUD camera dimensions. */
+    fun resize(width: Int, height: Int) {
+        hudCamera.setToOrtho(false, width.toFloat(), height.toFloat())
+    }
+
+    /**
+     * Draw the HUD for the current frame.
+     *
+     * @param ship  The player ship (used for lives count)
+     * @param score The current score
+     * @param timeString  Formatted time string (e.g. "1:05")
+     * @param i18n  The i18n manager for translated labels
+     */
+    fun render(ship: Ship, score: Int, timeString: String, i18n: I18nManager) {
+        hudCamera.update()
+        batch.projectionMatrix = hudCamera.combined
+        batch.begin()
+
+        val topY = hudCamera.viewportHeight - margin
+
+        // Line 1: Lives (heart icons + count)
+        val livesColor = when {
+            ship.lives >= 2 -> Color.WHITE
+            ship.lives == 1 -> Color.RED
+            else -> Color.DARK_GRAY
+        }
+        font.color = livesColor
+        val livesText = "${i18n.get("lives")}: ${"♥".repeat(ship.lives.coerceAtLeast(0))}"
+        font.draw(batch, livesText, margin, topY)
+
+        // Line 2: Score
+        font.color = Color.WHITE
+        val scoreText = "${i18n.get("score")}: $score"
+        font.draw(batch, scoreText, margin, topY - lineHeight)
+
+        // Line 3: Timer
+        font.color = Color.WHITE
+        val timeText = "${i18n.get("time")}: $timeString"
+        font.draw(batch, timeText, margin, topY - lineHeight * 2)
+
+        batch.end()
+        font.color = Color.WHITE // reset
+    }
+
+    fun dispose() {
+        batch.dispose()
+        font.dispose()
+    }
+}
