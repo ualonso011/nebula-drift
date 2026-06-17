@@ -163,4 +163,90 @@ object Constants {
 
     /** Number of frames in the mirror queue (~0.5s at 60 FPS). */
     const val CLONE_MIRROR_QUEUE_SIZE = 30
+
+    // ── Sprite pixel dimensions (procedural spritesheet) ─────────
+    const val SPRITE_SHIP = 64
+    const val SPRITE_ASTEROID_LARGE = 128
+    const val SPRITE_ASTEROID_MEDIUM = 96
+    const val SPRITE_ASTEROID_SMALL = 64
+    const val SPRITE_ENEMY_FIGHTER = 48
+    const val SPRITE_ENEMY_FRIGATE = 64
+    const val SPRITE_ENEMY_DESTROYER = 96
+    const val SPRITE_ENEMY_CLONE = 64
+    const val SPRITE_ASTRONAUT = 48
+    const val SPRITE_DEBRIS = 48
+    const val SPRITE_DEBRIS_GLOW = 64
+    const val SPRITE_LASER_WIDTH = 32
+    const val SPRITE_LASER_HEIGHT = 8
+    const val SPRITE_LASER_GLOW_WIDTH = 48
+    const val SPRITE_LASER_GLOW_HEIGHT = 16
+    const val SPRITE_THRUST_WIDTH = 32
+    const val SPRITE_THRUST_HEIGHT = 16
+    const val SPRITE_EXPLOSION_SMALL = 48
+    const val SPRITE_EXPLOSION_MEDIUM = 64
+    const val SPRITE_EXPLOSION_LARGE = 96
+    const val SPRITE_EXPLOSION_FRAMES = 6
+    const val SPRITE_THRUST_FRAMES = 2
+    const val SPRITE_ATLAS_MAX_WIDTH = 1024
+
+    // ── Animation / Timing ────────────────────────────────────
+    /** Frame duration for thrust flame flicker (~8 FPS). */
+    const val THRUST_FRAME_DURATION = 0.125f
+
+    /** Total duration of explosion animation. */
+    const val EXPLOSION_DURATION = 0.5f
+
+    // ── Particles ──────────────────────────────────────────────
+    /** Maximum simultaneous particles on screen. */
+    const val PARTICLE_MAX_COUNT = 300
+
+    /** Pixel size of the white particle circle texture. */
+    const val SPRITE_PARTICLE = 16
+
+    // ── Audio ──────────────────────────────────────────────────
+    /** Default music volume (0..1). */
+    const val MUSIC_VOLUME_DEFAULT = 0.5f
+
+    /** Default SFX volume (0..1). */
+    const val SFX_VOLUME_DEFAULT = 0.7f
+
+    /** Filename for background music (assets/music/bgm.mp3). */
+    const val MUSIC_FILENAME = "music/bgm.mp3"
+
+    /** SFX filenames in assets/sfx/. */
+    const val SFX_LASER = "sfx/laser.wav"
+    const val SFX_EXPLOSION_SMALL = "sfx/explosion_small.wav"
+    const val SFX_EXPLOSION_LARGE = "sfx/explosion_large.wav"
+    const val SFX_RESCUE = "sfx/rescue.wav"
+    const val SFX_DAMAGE = "sfx/damage.wav"
+    const val SFX_GAME_OVER = "sfx/game_over.wav"
+    const val SFX_NEW_RECORD = "sfx/new_record.wav"
+
+    // ── Screen Transition ───────────────────────────────────────
+    /** Duration of each fade half (fade-out or fade-in) in seconds. */
+    const val TRANSITION_DURATION = 0.5f
+
+    // ── Parallax Background ──────────────────────────────────────
+    /** Pixel width of each parallax layer texture. */
+    const val PARALLAX_BG_WIDTH = 512
+
+    /** Pixel height of each parallax layer texture. */
+    const val PARALLAX_BG_HEIGHT = 288
+
+    /** Far stars layer scroll speed multiplier. */
+    const val PARALLAX_FAR_SPEED = 0.1f
+
+    /** Near nebula layer scroll speed multiplier. */
+    const val PARALLAX_NEAR_SPEED = 0.3f
+
+    /** Number of star dots on the far layer. */
+    const val PARALLAX_STAR_COUNT = 120
+
+    // ── Astronaut Animation ─────────────────────────────────────
+    /** Duration of the death fade-out animation (seconds). */
+    const val ASTRONAUT_DEATH_FADE_DURATION = 0.5f
+
+    // ── Debug / Toggle ─────────────────────────────────────────
+    /** Key code for toggling debug hitbox overlay (F1). */
+    const val DEBUG_TOGGLE_KEY = com.badlogic.gdx.Input.Keys.F1
 }

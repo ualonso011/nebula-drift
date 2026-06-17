@@ -17,6 +17,13 @@ dependencies {
     // Testing
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // libGDX test infrastructure (Pixmap requires native libraries)
+    testImplementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:${libs.versions.gdx.get()}")
+    testRuntimeOnly("com.badlogicgames.gdx:gdx-platform:${libs.versions.gdx.get()}:natives-desktop")
+
+    // Headless backend for AudioManager tests (no GL context required)
+    testImplementation(libs.gdx.backend.headless)
 }
 
 java {

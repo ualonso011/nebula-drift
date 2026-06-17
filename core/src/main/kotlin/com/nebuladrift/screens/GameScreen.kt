@@ -2,27 +2,27 @@ package com.nebuladrift.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.InputMultiplexer
-import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Vector2
 import ktx.app.KtxScreen
 import com.nebuladrift.entities.Astronaut
 import com.nebuladrift.entities.Asteroid
-import com.nebuladrift.entities.AsteroidSize
 import com.nebuladrift.entities.Laser
 import com.nebuladrift.entities.Ship
 import com.nebuladrift.entities.SpaceDebris
-import com.nebuladrift.entities.enemies.DarkClone
 import com.nebuladrift.entities.enemies.Enemy
-import com.nebuladrift.entities.enemies.EnemyType
 import com.nebuladrift.input.GameInputProcessor
+import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.rendering.CameraSetup
+import com.nebuladrift.rendering.GameRenderer
 import com.nebuladrift.rendering.HudRenderer
+import com.nebuladrift.rendering.ParallaxBackground
+import com.nebuladrift.rendering.ParticleManager
+import com.nebuladrift.rendering.SpriteAtlas
 import com.nebuladrift.systems.AstronautSpawnSystem
 import com.nebuladrift.systems.CollisionSystem
 import com.nebuladrift.systems.DebrisSpawnSystem
@@ -48,16 +48,25 @@ import com.nebuladrift.NebulaDriftGame
  */
 class GameScreen(
     private val game: NebulaDriftGame,
-    private val i18n: I18nManager
+    private val i18n: I18nManager,
+    private val atlas: SpriteAtlas
 ) : KtxScreen {
 
     // ── Rendering ─────────────────────────────────────────────
     private val cameraSetup = CameraSetup()
-    private val shapeRenderer = ShapeRenderer()
     private val batch = SpriteBatch()
     private val hudRenderer = HudRenderer()
 
-    /** Runtime-generated placeholder background texture. */
+    /** Entity renderer using the procedural sprite atlas. */
+    private val gameRenderer = GameRenderer(batch, atlas, cameraSetup.camera)
+
+    /** Particle system for explosions, trails, sparkles, and damage. */
+    private val particleManager = ParticleManager(atlas).also { it.init() }
+
+    /** Parallax scrolling background (replaces simple background texture). */
+    private val parallaxBackground = ParallaxBackground().also { it.init() }
+
+    /** Runtime-generated placeholder background texture (fallback). */
     private val backgroundTexture: Texture by lazy { createBackgroundTexture() }
 
     // ── Entity state ──────────────────────────────────────────
@@ -127,7 +136,15 @@ class GameScreen(
 
     override fun render(delta: Float) {
         // ── Game-over check ───────────────────────────────────
-        if (gameOverTriggered) return
+        if (gameOverTriggered) {
+            // Keep rendering the transition overlay if active;
+            // skip game logic but still let the game-level render pass.
+            if (game.transition == null) return
+            // Clear and let the game-level overlay handle the rest.
+            Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
+            return
+        }
         if (ship.isDestroyed) {
             triggerGameOver()
             return
@@ -183,207 +200,36 @@ class GameScreen(
         scoreSystem.update(delta, context)
         score = context.score   // sync back mutable score
 
-        // ── Render game world ─────────────────────────────────
-        // Background
-        batch.projectionMatrix = cameraSetup.camera.combined
+        // ── Event dispatch (Particles + Audio) ─────────────────
+        particleManager.onGameEvent(events)
+        AudioManager.onGameEvent(events)
+
+        // ── Engine trail (continuous while thrusting) ─────────
+        if (ship.isThrusting) {
+            particleManager.spawnEngineTrail(ship.position)
+        }
+
+        // ── Update particles ──────────────────────────────────
+        particleManager.update(delta)
+
+        // ── Update parallax background ────────────────────────
+        parallaxBackground.update(delta, difficultyManager.scrollSpeedMultiplier)
+
+        // ── Render game world via GameRenderer ────────────────
+        gameRenderer.parallaxBackground = parallaxBackground
+        gameRenderer.backgroundTexture = backgroundTexture
+        gameRenderer.render(context, elapsedTime)
+
+        // ── Render particles over game world ──────────────────
         batch.begin()
-        batch.draw(
-            backgroundTexture,
-            0f, 0f,
-            Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT
-        )
+        particleManager.render(batch)
         batch.end()
-
-        // Entities via ShapeRenderer
-        shapeRenderer.projectionMatrix = cameraSetup.camera.combined
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-
-        renderLasers()
-        renderAsteroids()
-        renderEnemies()
-        renderAstronauts()
-        renderDebris()
-        renderShip()
-
-        shapeRenderer.end()
 
         // ── HUD overlay (screen-space) ────────────────────────
         hudRenderer.render(ship, score, scoreSystem.formattedTime, scoreSystem.astronautsRescued, i18n)
 
         // ── Clear frame-scoped events ─────────────────────────
         events.clear()
-    }
-
-    // ── Ship rendering ────────────────────────────────────────
-
-    private fun renderShip() {
-        if (ship.isDestroyed) return
-
-        // Invulnerability blink: skip every other 100ms
-        if (ship.isInvulnerable && ((ship.invulnerabilityTimer * 10).toInt() % 2 == 0)) {
-            // Blink off — skip drawing
-        } else {
-            val halfSize = ship.radius * 0.8f
-
-            // Ship body colour varies by damage state
-            shapeRenderer.color = when (ship.damageState) {
-                com.nebuladrift.entities.DamageState.PRISTINE -> Color(0.2f, 0.5f, 1f, 1f)
-                com.nebuladrift.entities.DamageState.DAMAGED -> Color(0.4f, 0.4f, 0.8f, 1f)
-                com.nebuladrift.entities.DamageState.CRITICAL -> Color(0.8f, 0.3f, 0.3f, 1f)
-                com.nebuladrift.entities.DamageState.DESTROYED -> Color.DARK_GRAY
-            }
-            shapeRenderer.rect(
-                ship.position.x - halfSize,
-                ship.position.y - halfSize,
-                halfSize * 2f,
-                halfSize * 2f
-            )
-
-            // Thrust flame (small orange rectangle below ship)
-            if (ship.isThrusting) {
-                shapeRenderer.color = Color.ORANGE
-                shapeRenderer.rect(
-                    ship.position.x - halfSize * 0.3f,
-                    ship.position.y - halfSize * 1.4f,
-                    halfSize * 0.6f,
-                    halfSize * 0.4f
-                )
-            }
-        }
-    }
-
-    // ── Enemy rendering ──────────────────────────────────────
-
-    private fun renderEnemies() {
-        for (enemy in enemies) {
-            when (enemy.getType()) {
-                EnemyType.LIGHT_FIGHTER -> {
-                    // Small red triangle pointing left
-                    shapeRenderer.color = Color(0.9f, 0.2f, 0.2f, 1f)
-                    val r = enemy.radius
-                    val cx = enemy.position.x
-                    val cy = enemy.position.y
-                    shapeRenderer.triangle(
-                        cx - r, cy,
-                        cx + r, cy + r * 0.7f,
-                        cx + r, cy - r * 0.7f
-                    )
-                }
-                EnemyType.MEDIUM_FRIGATE -> {
-                    // Medium orange rectangle
-                    shapeRenderer.color = Color(1f, 0.6f, 0.1f, 1f)
-                    val halfW = enemy.radius * 0.8f
-                    val halfH = enemy.radius * 0.5f
-                    shapeRenderer.rect(
-                        enemy.position.x - halfW,
-                        enemy.position.y - halfH,
-                        halfW * 2f,
-                        halfH * 2f
-                    )
-                }
-                EnemyType.HEAVY_DESTROYER -> {
-                    // Large purple circle (hexagon substitute)
-                    shapeRenderer.color = Color(0.6f, 0.2f, 0.8f, 1f)
-                    shapeRenderer.circle(enemy.position.x, enemy.position.y, enemy.radius, 12)
-                }
-                EnemyType.DARK_CLONE -> {
-                    // Dark red ship (similar to player shape, different color)
-                    shapeRenderer.color = Color(0.6f, 0.1f, 0.1f, 1f)
-                    val halfSize = enemy.radius * 0.8f
-                    shapeRenderer.rect(
-                        enemy.position.x - halfSize,
-                        enemy.position.y - halfSize,
-                        halfSize * 2f,
-                        halfSize * 2f
-                    )
-                    // Firing indicator (small yellow dot)
-                    if ((enemy as? DarkClone)?.isFiring == true) {
-                        shapeRenderer.color = Color.YELLOW
-                        shapeRenderer.circle(
-                            enemy.position.x + enemy.radius * 0.8f,
-                            enemy.position.y,
-                            0.05f
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    // ── Astronaut rendering ──────────────────────────────────
-
-    private fun renderAstronauts() {
-        for (astronaut in astronauts) {
-            val baseX = astronaut.position.x
-            val baseY = astronaut.position.y
-
-            when (astronaut.state) {
-                Astronaut.State.FLOATING -> {
-                    // Green circle with white ring
-                    shapeRenderer.color = Color(0.2f, 0.8f, 0.2f, 1f)
-                    shapeRenderer.circle(baseX, baseY, astronaut.radius)
-                    shapeRenderer.color = Color(1f, 1f, 1f, 0.5f)
-                    shapeRenderer.circle(baseX, baseY, astronaut.radius * 1.3f, 8)
-                }
-                Astronaut.State.RESCUED -> {
-                    // Green circle moving up (wave animation)
-                    val offsetY = kotlin.math.sin(astronaut.stateTimer * Math.PI.toFloat() * 4f) * 0.3f
-                    val animY = baseY + offsetY + astronaut.stateTimer * 1.5f
-                    shapeRenderer.color = Color(0.2f, 1f, 0.2f, 0.8f)
-                    shapeRenderer.circle(baseX, animY, astronaut.radius * 0.8f)
-                }
-                Astronaut.State.DEAD -> {
-                    // Green circle falling down
-                    val animY = baseY - astronaut.stateTimer * 2f
-                    shapeRenderer.color = Color(0.5f, 0.2f, 0.2f, 0.6f)
-                    shapeRenderer.circle(baseX, animY, astronaut.radius * 0.6f)
-                }
-            }
-        }
-    }
-
-    // ── Debris rendering ──────────────────────────────────────
-
-    private fun renderDebris() {
-        for (d in debris) {
-            val alpha = 0.5f + 0.5f * kotlin.math.sin(d.glowPhase)
-            // Outer glow circle
-            shapeRenderer.color = Color(1f, 0.8f, 0f, alpha * 0.4f)
-            shapeRenderer.circle(d.position.x, d.position.y, d.radius * 2.5f, 8)
-            // Inner solid circle
-            shapeRenderer.color = Color(1f, 0.8f, 0f, 1f)
-            shapeRenderer.circle(d.position.x, d.position.y, d.radius)
-        }
-    }
-
-    // ── Asteroid rendering ────────────────────────────────────
-
-    private fun renderAsteroids() {
-        for (asteroid in asteroids) {
-            // Colour shade varies by size
-            shapeRenderer.color = when (asteroid.size) {
-                AsteroidSize.LARGE -> Color(0.4f, 0.4f, 0.4f, 1f)
-                AsteroidSize.MEDIUM -> Color(0.55f, 0.55f, 0.55f, 1f)
-                AsteroidSize.SMALL -> Color(0.7f, 0.7f, 0.7f, 1f)
-            }
-            shapeRenderer.circle(asteroid.position.x, asteroid.position.y, asteroid.radius)
-        }
-    }
-
-    // ── Laser rendering ───────────────────────────────────────
-
-    private fun renderLasers() {
-        shapeRenderer.color = Color.YELLOW
-        for (laser in lasers) {
-            val halfLen = laser.radius * 4f
-            shapeRenderer.rectLine(
-                laser.position.x - halfLen,
-                laser.position.y,
-                laser.position.x + halfLen,
-                laser.position.y,
-                laser.radius * 2f
-            )
-        }
     }
 
     // ── Actions ───────────────────────────────────────────────
@@ -400,6 +246,7 @@ class GameScreen(
             velocity = Vector2(Constants.LASER_SPEED, 0f)
         )
         lasers.add(laser)
+        events.add(GameEvent.LaserFired(laser))
     }
 
     // ── Game-over transition ──────────────────────────────────
@@ -416,7 +263,7 @@ class GameScreen(
         GameSession.astronautsRescued = scoreSystem.astronautsRescued
         GameSession.astronautsKilled = scoreSystem.astronautsKilled
 
-        game.setScreen<GameOverScreen>()
+        game.startTransition { game.setScreen<GameOverScreen>() }
     }
 
     // ── Helpers ───────────────────────────────────────────────
@@ -438,6 +285,7 @@ class GameScreen(
         gameOverTriggered = false
         scoreSystem.reset()
         mirrorSystem.reset()
+        particleManager.clear()
     }
 
     // ── Placeholder textures ──────────────────────────────────
@@ -486,7 +334,8 @@ class GameScreen(
     // ── Cleanup ───────────────────────────────────────────────
 
     override fun dispose() {
-        shapeRenderer.dispose()
+        gameRenderer.dispose()
+        parallaxBackground.dispose()
         batch.dispose()
         hudRenderer.dispose()
         backgroundTexture.dispose()
