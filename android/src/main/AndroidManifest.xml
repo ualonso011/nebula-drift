@@ -10,8 +10,10 @@
         <activity
             android:name=".AndroidLauncher"
             android:label="Nebula Drift"
-            android:screenOrientation="portrait"
-            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize">
+            android:screenOrientation="sensorLandscape"
+            android:keepScreenOn="true"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
