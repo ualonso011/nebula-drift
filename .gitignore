@@ -41,3 +41,7 @@ local.properties
 
 # Engram
 .engram/
+
+# SDD artifacts
+.atl/
+openspec/
