@@ -78,32 +78,58 @@ class NebulaDriftGame : KtxGame<KtxScreen>() {
     // ── Lifecycle ───────────────────────────────────────────────
 
     override fun create() {
-        // Initialise audio (loads preferences, gracefully skips missing assets)
-        AudioManager.init()
+        Gdx.app.log("NebulaDriftGame", "=== create() INICIO ===")
+        
+        try {
+            // Initialise audio (loads preferences, gracefully skips missing assets)
+            Gdx.app.log("NebulaDriftGame", "Inicializando AudioManager...")
+            AudioManager.init()
+            Gdx.app.log("NebulaDriftGame", "AudioManager inicializado")
 
-        // Initialise internationalisation
-        i18n = I18nManager()
-        i18n.init()
+            // Initialise internationalisation
+            Gdx.app.log("NebulaDriftGame", "Inicializando I18nManager...")
+            i18n = I18nManager()
+            i18n.init()
+            Gdx.app.log("NebulaDriftGame", "I18nManager inicializado")
 
-        // Generate procedural sprite atlas (one-time init)
-        atlas = SpriteGenerator.generateAtlas()
+            // Generate procedural sprite atlas (one-time init)
+            Gdx.app.log("NebulaDriftGame", "Generando SpriteAtlas...")
+            atlas = SpriteGenerator.generateAtlas()
+            Gdx.app.log("NebulaDriftGame", "SpriteAtlas generado")
 
-        // Create 1x1 white texture for transition overlay
-        val pix = Pixmap(1, 1, Pixmap.Format.RGBA8888)
-        pix.setColor(Color.WHITE)
-        pix.fill()
-        whiteTexture = Texture(pix)
-        pix.dispose()
+            // Create 1x1 white texture for transition overlay
+            Gdx.app.log("NebulaDriftGame", "Creando textura blanca...")
+            val pix = Pixmap(1, 1, Pixmap.Format.RGBA8888)
+            pix.setColor(Color.WHITE)
+            pix.fill()
+            whiteTexture = Texture(pix)
+            pix.dispose()
+            Gdx.app.log("NebulaDriftGame", "Textura blanca creada")
 
-        // Screens are created here so they share the same game reference.
-        // GameScreen and GameOverScreen access i18n through the game or
-        // receive it via constructor injection.
-        addScreen(MenuScreen(this, i18n))
-        addScreen(GameScreen(this, i18n, atlas))
-        addScreen(GameOverScreen(this, i18n))
-        addScreen(SettingsScreen(this))
-        addScreen(LeaderboardScreen(this, i18n))
-        setScreen<MenuScreen>()
+            // Screens are created here so they share the same game reference.
+            // GameScreen and GameOverScreen access i18n through the game or
+            // receive it via constructor injection.
+            Gdx.app.log("NebulaDriftGame", "Creando screens...")
+            addScreen(MenuScreen(this, i18n))
+            Gdx.app.log("NebulaDriftGame", "MenuScreen creado")
+            addScreen(GameScreen(this, i18n, atlas))
+            Gdx.app.log("NebulaDriftGame", "GameScreen creado")
+            addScreen(GameOverScreen(this, i18n))
+            Gdx.app.log("NebulaDriftGame", "GameOverScreen creado")
+            addScreen(SettingsScreen(this))
+            Gdx.app.log("NebulaDriftGame", "SettingsScreen creado")
+            addScreen(LeaderboardScreen(this, i18n))
+            Gdx.app.log("NebulaDriftGame", "LeaderboardScreen creado")
+            
+            Gdx.app.log("NebulaDriftGame", "Estableciendo MenuScreen...")
+            setScreen<MenuScreen>()
+            
+            Gdx.app.log("NebulaDriftGame", "=== create() FIN ===")
+            
+        } catch (e: Exception) {
+            Gdx.app.error("NebulaDriftGame", "ERROR en create()", e)
+            throw e
+        }
     }
 
     override fun render() {
