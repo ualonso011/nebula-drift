@@ -83,4 +83,84 @@ object Constants {
 
     /** Time bonus: points per second survived. */
     const val SCORE_TIME_BONUS = 1 // point/s
+
+    // ── Enemies ────────────────────────────────────────────────
+    /** Default enemy spawn interval (seconds). */
+    const val ENEMY_SPAWN_INTERVAL = 3f
+
+    /** Light Fighter (small, fast, 1 HP). */
+    const val ENEMY_LIGHT_SPEED = 3f
+    const val ENEMY_LIGHT_RADIUS = 0.25f
+
+    /** Medium Frigate (medium speed, 2 HP). */
+    const val ENEMY_MEDIUM_SPEED = 2.5f
+    const val ENEMY_MEDIUM_RADIUS = 0.4f
+
+    /** Heavy Destroyer (slow, large, 3 HP). */
+    const val ENEMY_HEAVY_SPEED = 1.5f
+    const val ENEMY_HEAVY_RADIUS = 0.6f
+
+    /** Dark Clone (mirrors player, 2-3 HP). */
+    const val ENEMY_CLONE_SPEED = 2f
+
+    // ── Enemy Points ───────────────────────────────────────────
+    const val SCORE_LIGHT_FIGHTER = 150
+    const val SCORE_MEDIUM_FRIGATE = 250
+    const val SCORE_HEAVY_DESTROYER = 400
+    const val SCORE_DARK_CLONE = 500
+
+    // ── Astronaut ──────────────────────────────────────────────
+    /** Interval between astronaut spawns (seconds). */
+    const val ASTRONAUT_SPAWN_INTERVAL = 12f
+
+    /** Astronaut drift speed. */
+    const val ASTRONAUT_SPEED = 0.8f
+
+    /** Astronaut collision radius. */
+    const val ASTRONAUT_RADIUS = 0.2f
+
+    /** Points awarded for rescuing an astronaut. */
+    const val SCORE_ASTRONAUT_RESCUE = 500
+
+    /** Points deducted for killing an astronaut. */
+    const val SCORE_ASTRONAUT_KILL_PENALTY = 200
+
+    // ── Space Debris ───────────────────────────────────────────
+    /** Interval between debris spawns (seconds). */
+    const val DEBRIS_SPAWN_INTERVAL = 25f
+
+    /** Debris drift speed. */
+    const val DEBRIS_SPEED = 0.5f
+
+    /** Debris collision radius. */
+    const val DEBRIS_RADIUS = 0.15f
+
+    /** Speed of the glow phase oscillation (radians/s). */
+    const val DEBRIS_GLOW_SPEED = 3f
+
+    // ── Difficulty Curve ───────────────────────────────────────
+    /** No enemies spawn during the first N seconds. */
+    const val DIFFICULTY_SAFE_ZONE = 15f
+
+    /** Duration over which difficulty ramps from start to end values. */
+    const val DIFFICULTY_RAMP_DURATION = 180f
+
+    /** Scroll speed endpoints (units/s). */
+    const val DIFFICULTY_START_SCROLL_SPEED = 2f
+    const val DIFFICULTY_END_SCROLL_SPEED = 5f
+
+    /** Asteroid spawn interval endpoints (seconds between waves). */
+    const val DIFFICULTY_START_ASTEROID_RATE = 2f
+    const val DIFFICULTY_END_ASTEROID_RATE = 0.5f
+
+    /** Enemy spawn interval endpoints (seconds between spawns). */
+    const val DIFFICULTY_START_ENEMY_RATE = 4f
+    const val DIFFICULTY_END_ENEMY_RATE = 2f
+
+    // ── Mirror / Dark Clone ────────────────────────────────────
+    /** Delay between player action and Dark Clone mirroring (seconds). */
+    const val CLONE_MIRROR_DELAY = 0.5f
+
+    /** Number of frames in the mirror queue (~0.5s at 60 FPS). */
+    const val CLONE_MIRROR_QUEUE_SIZE = 30
 }

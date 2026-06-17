@@ -56,6 +56,16 @@ class Ship(
         }
 
     /**
+     * Add one life, capped at [Constants.SHIP_LIVES].
+     * @return true if a life was added, false if already at max
+     */
+    fun addLife(): Boolean {
+        if (lives >= Constants.SHIP_LIVES) return false
+        lives++
+        return true
+    }
+
+    /**
      * Reduce lives by one if not invulnerable and not already destroyed.
      * Starts the invulnerability timer on successful hit.
      * @return true if damage was applied, false if blocked (invulnerable/already dead)
