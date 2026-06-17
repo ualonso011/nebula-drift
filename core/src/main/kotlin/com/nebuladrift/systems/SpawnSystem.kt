@@ -9,9 +9,14 @@ import kotlin.random.Random
 /**
  * Timer-based asteroid spawner.
  *
- * Spawns asteroids on the right side of the screen at a configurable
- * interval. Size distribution skews toward large (common), with fewer
- * medium and rare small asteroids.
+ * Spawns asteroids on the right side of the screen at an interval
+ * driven by [DifficultyManager.asteroidSpawnRateMultiplier]. Size
+ * distribution skews toward large (common), with fewer medium and
+ * rare small asteroids.
+ *
+ * Asteroid speed is multiplied by
+ * [DifficultyManager.scrollSpeedMultiplier] so difficulty affects
+ * both spawn rate and scroll speed.
  *
  * Pauses spawning when [Constants.ASTEROID_MAX_COUNT] is reached.
  */
@@ -23,7 +28,8 @@ class SpawnSystem : GameSystem {
         if (context.asteroids.size >= Constants.ASTEROID_MAX_COUNT) return
 
         timeSinceLastSpawn += delta
-        if (timeSinceLastSpawn >= Constants.ASTEROID_SPAWN_INTERVAL) {
+        val spawnInterval = context.difficultyManager.asteroidSpawnRateMultiplier
+        if (timeSinceLastSpawn >= spawnInterval) {
             timeSinceLastSpawn = 0f
             spawnAsteroid(context)
         }
@@ -41,12 +47,13 @@ class SpawnSystem : GameSystem {
         val x = Constants.WORLD_WIDTH + size.radius * 2f
         val y = Random.nextFloat() * Constants.WORLD_HEIGHT
 
-        // Leftward velocity with slight vertical variation
+        // Leftward velocity with slight vertical variation, scaled by difficulty
+        val scrollMultiplier = context.difficultyManager.scrollSpeedMultiplier
         val speed = Random.nextFloat() *
             (Constants.ASTEROID_MAX_SPEED - Constants.ASTEROID_MIN_SPEED) +
             Constants.ASTEROID_MIN_SPEED
-        val vx = -speed
-        val vy = (Random.nextFloat() - 0.5f) * speed * 0.5f
+        val vx = -speed * scrollMultiplier
+        val vy = (Random.nextFloat() - 0.5f) * speed * 0.5f * scrollMultiplier
 
         val asteroid = Asteroid(
             position = Vector2(x, y),

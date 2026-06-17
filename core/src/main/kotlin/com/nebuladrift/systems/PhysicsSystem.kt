@@ -1,8 +1,13 @@
 package com.nebuladrift.systems
 
 import com.badlogic.gdx.math.MathUtils
+import com.nebuladrift.entities.Astronaut
 import com.nebuladrift.entities.Asteroid
 import com.nebuladrift.entities.Laser
+import com.nebuladrift.entities.SpaceDebris
+import com.nebuladrift.entities.enemies.DarkClone
+import com.nebuladrift.entities.enemies.Enemy
+import com.nebuladrift.entities.enemies.EnemyType
 import com.nebuladrift.util.Constants
 
 /**
@@ -12,6 +17,12 @@ import com.nebuladrift.util.Constants
  * - Ship: constant downward gravity, thrust when active, velocity damping, bounds clamp
  * - Lasers: update position, remove expired / off-screen
  * - Asteroids: update position, remove off-screen
+ * - Enemies: move left at their base speed * difficulty scroll multiplier,
+ *   DarkClone Y mirrored from [MirrorSystem], remove off-screen
+ * - Astronauts: move left at ASTRONAUT_SPEED * difficulty scroll multiplier,
+ *   remove after rescue/kill animation or off-screen
+ * - Debris: move left at DEBRIS_SPEED * difficulty scroll multiplier,
+ *   update glow phase oscillation, remove off-screen
  */
 class PhysicsSystem : GameSystem {
 
@@ -19,6 +30,9 @@ class PhysicsSystem : GameSystem {
         updateShip(delta, context)
         updateLasers(delta, context)
         updateAsteroids(delta, context)
+        updateEnemies(delta, context)
+        updateAstronauts(delta, context)
+        updateDebris(delta, context)
     }
 
     private fun updateShip(delta: Float, context: GameContext) {
@@ -87,5 +101,79 @@ class PhysicsSystem : GameSystem {
         }
 
         context.asteroids.removeAll(toRemove)
+    }
+
+    // ── Enemies ────────────────────────────────────────────────
+
+    private fun updateEnemies(delta: Float, context: GameContext) {
+        val multiplier = context.difficultyManager.scrollSpeedMultiplier
+        val toRemove = mutableListOf<Enemy>()
+
+        for (enemy in context.enemies) {
+            // DarkClone Y-position is driven by MirrorSystem
+            if (enemy is DarkClone) {
+                val mirrored = context.mirrorSystem.getMirroredAction(context.elapsedTime)
+                if (mirrored != null) {
+                    enemy.position.y = mirrored.position.y
+                    enemy.isFiring = mirrored.isShooting
+                }
+            }
+
+            // Apply difficulty scroll speed to X-velocity
+            enemy.velocity.x = -enemyBaseSpeed(enemy) * multiplier
+            enemy.update(delta)
+
+            if (enemy.position.x < -enemy.radius * 2) {
+                toRemove.add(enemy)
+            }
+        }
+
+        context.enemies.removeAll(toRemove)
+    }
+
+    /** Base horizontal speed for each enemy type (units/s). */
+    private fun enemyBaseSpeed(enemy: Enemy): Float = when (enemy.getType()) {
+        EnemyType.LIGHT_FIGHTER -> Constants.ENEMY_LIGHT_SPEED
+        EnemyType.MEDIUM_FRIGATE -> Constants.ENEMY_MEDIUM_SPEED
+        EnemyType.HEAVY_DESTROYER -> Constants.ENEMY_HEAVY_SPEED
+        EnemyType.DARK_CLONE -> Constants.ENEMY_CLONE_SPEED
+    }
+
+    // ── Astronauts ─────────────────────────────────────────────
+
+    private fun updateAstronauts(delta: Float, context: GameContext) {
+        val multiplier = context.difficultyManager.scrollSpeedMultiplier
+        val toRemove = mutableListOf<Astronaut>()
+
+        for (astronaut in context.astronauts) {
+            astronaut.velocity.x = -Constants.ASTRONAUT_SPEED * multiplier
+            astronaut.update(delta)
+
+            if (astronaut.shouldRemove ||
+                astronaut.position.x < -astronaut.radius * 2
+            ) {
+                toRemove.add(astronaut)
+            }
+        }
+
+        context.astronauts.removeAll(toRemove)
+    }
+
+    // ── Debris ─────────────────────────────────────────────────
+
+    private fun updateDebris(delta: Float, context: GameContext) {
+        val multiplier = context.difficultyManager.scrollSpeedMultiplier
+        val toRemove = mutableListOf<SpaceDebris>()
+
+        for (debris in context.debris) {
+            debris.velocity.x = -Constants.DEBRIS_SPEED * multiplier
+            debris.update(delta)
+
+            if (debris.position.x < -debris.radius * 2) {
+                toRemove.add(debris)
+            }
+        }
+
+        context.debris.removeAll(toRemove)
     }
 }
