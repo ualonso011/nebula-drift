@@ -3,10 +3,17 @@ package com.nebuladrift.systems
 import com.badlogic.gdx.math.Vector2
 import com.nebuladrift.entities.Asteroid
 import com.nebuladrift.entities.AsteroidSize
+import com.nebuladrift.entities.Astronaut
 import com.nebuladrift.entities.Laser
 import com.nebuladrift.entities.Ship
+import com.nebuladrift.entities.SpaceDebris
+import com.nebuladrift.entities.enemies.DarkClone
+import com.nebuladrift.entities.enemies.LightFighter
+import com.nebuladrift.entities.enemies.MediumFrigate
+import com.nebuladrift.entities.enemies.HeavyDestroyer
 import com.nebuladrift.util.Constants
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,7 +39,7 @@ class PhysicsTest {
     fun `ship falls when gravity applied and not thrusting`() {
         val ship = Ship()
         val initialY = ship.position.y
-        val context = GameContext(ship, mutableListOf(), mutableListOf(), mutableListOf(), 0)
+        val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
@@ -44,7 +51,7 @@ class PhysicsTest {
         val ship = Ship()
         ship.isThrusting = true
         val initialY = ship.position.y
-        val context = GameContext(ship, mutableListOf(), mutableListOf(), mutableListOf(), 0)
+        val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
@@ -59,7 +66,7 @@ class PhysicsTest {
         val ship = Ship()
         ship.position.y = -10f
         ship.velocity.y = -50f
-        val context = GameContext(ship, mutableListOf(), mutableListOf(), mutableListOf(), 0)
+        val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
@@ -76,7 +83,7 @@ class PhysicsTest {
         val ship = Ship()
         ship.position.y = 20f
         ship.velocity.y = 50f
-        val context = GameContext(ship, mutableListOf(), mutableListOf(), mutableListOf(), 0)
+        val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
@@ -93,7 +100,7 @@ class PhysicsTest {
         val ship = Ship()
         ship.position.x = -10f
         ship.velocity.x = -50f
-        val context = GameContext(ship, mutableListOf(), mutableListOf(), mutableListOf(), 0)
+        val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
@@ -110,7 +117,7 @@ class PhysicsTest {
         val ship = Ship()
         ship.position.x = 30f
         ship.velocity.x = 50f
-        val context = GameContext(ship, mutableListOf(), mutableListOf(), mutableListOf(), 0)
+        val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
@@ -128,7 +135,7 @@ class PhysicsTest {
     fun `ship velocity is damped each frame`() {
         val ship = Ship()
         ship.velocity.set(10f, 0f)
-        val context = GameContext(ship, mutableListOf(), mutableListOf(), mutableListOf(), 0)
+        val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
@@ -141,7 +148,7 @@ class PhysicsTest {
     fun `damping reduces both velocity components`() {
         val ship = Ship()
         ship.velocity.set(5f, 5f)
-        val context = GameContext(ship, mutableListOf(), mutableListOf(), mutableListOf(), 0)
+        val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
@@ -159,11 +166,11 @@ class PhysicsTest {
             size = AsteroidSize.MEDIUM
         )
         val context = GameContext(
-            Ship(),
-            mutableListOf(asteroid),
-            mutableListOf(),
-            mutableListOf(),
-            0
+            ship = Ship(),
+            asteroids = mutableListOf(asteroid),
+            lasers = mutableListOf(),
+            events = mutableListOf(),
+            score = 0
         )
 
         physicsSystem.update(0.1f, context)
@@ -184,11 +191,11 @@ class PhysicsTest {
             size = AsteroidSize.SMALL
         )
         val context = GameContext(
-            Ship(),
-            mutableListOf(slow, fast),
-            mutableListOf(),
-            mutableListOf(),
-            0
+            ship = Ship(),
+            asteroids = mutableListOf(slow, fast),
+            lasers = mutableListOf(),
+            events = mutableListOf(),
+            score = 0
         )
 
         physicsSystem.update(0.1f, context)
@@ -204,11 +211,11 @@ class PhysicsTest {
     fun `lasers move right at high speed`() {
         val laser = Laser(position = Vector2(5f, 5f))
         val context = GameContext(
-            Ship(),
-            mutableListOf(),
-            mutableListOf(laser),
-            mutableListOf(),
-            0
+            ship = Ship(),
+            asteroids = mutableListOf(),
+            lasers = mutableListOf(laser),
+            events = mutableListOf(),
+            score = 0
         )
 
         physicsSystem.update(0.1f, context)
@@ -220,11 +227,11 @@ class PhysicsTest {
     fun `lasers age over time`() {
         val laser = Laser(position = Vector2(5f, 5f))
         val context = GameContext(
-            Ship(),
-            mutableListOf(),
-            mutableListOf(laser),
-            mutableListOf(),
-            0
+            ship = Ship(),
+            asteroids = mutableListOf(),
+            lasers = mutableListOf(laser),
+            events = mutableListOf(),
+            score = 0
         )
 
         physicsSystem.update(0.5f, context)
@@ -236,11 +243,11 @@ class PhysicsTest {
     fun `expired lasers are removed from context`() {
         val laser = Laser(position = Vector2(5f, 5f))
         val context = GameContext(
-            Ship(),
-            mutableListOf(),
-            mutableListOf(laser),
-            mutableListOf(),
-            0
+            ship = Ship(),
+            asteroids = mutableListOf(),
+            lasers = mutableListOf(laser),
+            events = mutableListOf(),
+            score = 0
         )
 
         // Run past laser lifetime
@@ -253,15 +260,246 @@ class PhysicsTest {
     fun `off-screen lasers are removed from context`() {
         val laser = Laser(position = Vector2(Constants.WORLD_WIDTH + 10f, 5f))
         val context = GameContext(
-            Ship(),
-            mutableListOf(),
-            mutableListOf(laser),
-            mutableListOf(),
-            0
+            ship = Ship(),
+            asteroids = mutableListOf(),
+            lasers = mutableListOf(laser),
+            events = mutableListOf(),
+            score = 0
         )
 
         physicsSystem.update(0.016f, context)
 
         assertTrue(context.lasers.isEmpty(), "Off-screen laser should be removed")
+    }
+
+    // ── Enemies: movement ─────────────────────────────────────
+
+    @Test
+    fun `lightFighter moves left at its speed`() {
+        val enemy = LightFighter(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.1f, ctx)
+
+        val expectedX = 10f - Constants.ENEMY_LIGHT_SPEED * 1.0f * 0.1f
+        assertEquals(expectedX, enemy.position.x, 0.01f, "LightFighter should move left at its speed")
+    }
+
+    @Test
+    fun `mediumFrigate moves left at its speed`() {
+        val enemy = MediumFrigate(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.1f, ctx)
+
+        val expectedX = 10f - Constants.ENEMY_MEDIUM_SPEED * 1.0f * 0.1f
+        assertEquals(expectedX, enemy.position.x, 0.01f)
+    }
+
+    @Test
+    fun `heavyDestroyer moves left at its speed`() {
+        val enemy = HeavyDestroyer(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.1f, ctx)
+
+        val expectedX = 10f - Constants.ENEMY_HEAVY_SPEED * 1.0f * 0.1f
+        assertEquals(expectedX, enemy.position.x, 0.01f)
+    }
+
+    @Test
+    fun `enemy speed is multiplied by scrollSpeedMultiplier`() {
+        val enemy = LightFighter(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+        ctx.difficultyManager.scrollSpeedMultiplier = 2.0f
+
+        physicsSystem.update(0.1f, ctx)
+
+        val expectedX = 10f - Constants.ENEMY_LIGHT_SPEED * 2.0f * 0.1f
+        assertEquals(expectedX, enemy.position.x, 0.01f,
+            "Enemy should move faster with higher scroll speed multiplier")
+    }
+
+    @Test
+    fun `off-screen enemies are removed from context`() {
+        val enemy = LightFighter(Vector2(-10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.enemies.isEmpty(), "Off-screen enemy should be removed")
+    }
+
+    @Test
+    fun `on-screen enemies are not removed`() {
+        val enemy = LightFighter(Vector2(5f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.enemies.isNotEmpty(), "On-screen enemy should remain")
+    }
+
+    // ── Astronauts: movement ──────────────────────────────────
+
+    @Test
+    fun `astronaut moves left at ASTRONAUT_SPEED`() {
+        val astronaut = Astronaut(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.1f, ctx)
+
+        val expectedX = 10f - Constants.ASTRONAUT_SPEED * 1.0f * 0.1f
+        assertEquals(expectedX, astronaut.position.x, 0.01f,
+            "Astronaut should move left at ASTRONAUT_SPEED")
+    }
+
+    @Test
+    fun `astronaut speed is multiplied by scrollSpeedMultiplier`() {
+        val astronaut = Astronaut(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 0)
+        ctx.difficultyManager.scrollSpeedMultiplier = 1.5f
+
+        physicsSystem.update(0.1f, ctx)
+
+        val expectedX = 10f - Constants.ASTRONAUT_SPEED * 1.5f * 0.1f
+        assertEquals(expectedX, astronaut.position.x, 0.01f,
+            "Astronaut should move faster with higher scroll multiplier")
+    }
+
+    @Test
+    fun `astronaut removed after rescue animation completes`() {
+        val astronaut = Astronaut(Vector2(10f, 5f))
+        astronaut.rescue()
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 0)
+
+        // Update past the 0.5s animation threshold
+        physicsSystem.update(0.6f, ctx)
+
+        assertTrue(ctx.astronauts.isEmpty(), "Astronaut should be removed after animation completes")
+    }
+
+    @Test
+    fun `off-screen astronauts are removed`() {
+        val astronaut = Astronaut(Vector2(-1f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.astronauts.isEmpty(), "Off-screen astronaut should be removed")
+    }
+
+    @Test
+    fun `floating on-screen astronaut is not removed`() {
+        val astronaut = Astronaut(Vector2(5f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.astronauts.isNotEmpty(), "On-screen floating astronaut should remain")
+    }
+
+    // ── Debris: movement ──────────────────────────────────────
+
+    @Test
+    fun `debris moves left at DEBRIS_SPEED`() {
+        val debris = SpaceDebris(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(), debris = mutableListOf(debris),
+            events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.1f, ctx)
+
+        val expectedX = 10f - Constants.DEBRIS_SPEED * 1.0f * 0.1f
+        assertEquals(expectedX, debris.position.x, 0.01f,
+            "Debris should move left at DEBRIS_SPEED")
+    }
+
+    @Test
+    fun `debris speed is multiplied by scrollSpeedMultiplier`() {
+        val debris = SpaceDebris(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(), debris = mutableListOf(debris),
+            events = mutableListOf(), score = 0)
+        ctx.difficultyManager.scrollSpeedMultiplier = 0.5f
+
+        physicsSystem.update(0.1f, ctx)
+
+        val expectedX = 10f - Constants.DEBRIS_SPEED * 0.5f * 0.1f
+        assertEquals(expectedX, debris.position.x, 0.01f,
+            "Debris should move slower with lower scroll multiplier")
+    }
+
+    @Test
+    fun `debris glow phase updates over time`() {
+        val debris = SpaceDebris(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(), debris = mutableListOf(debris),
+            events = mutableListOf(), score = 0)
+        val initialGlow = debris.glowPhase
+
+        physicsSystem.update(0.5f, ctx)
+
+        assertTrue(debris.glowPhase > initialGlow, "Glow phase should increase over time")
+        assertEquals(Constants.DEBRIS_GLOW_SPEED * 0.5f, debris.glowPhase, 0.001f,
+            "Glow phase should increase at DEBRIS_GLOW_SPEED")
+    }
+
+    @Test
+    fun `off-screen debris is removed from context`() {
+        val debris = SpaceDebris(Vector2(-1f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(), debris = mutableListOf(debris),
+            events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.debris.isEmpty(), "Off-screen debris should be removed")
+    }
+
+    @Test
+    fun `on-screen debris is not removed`() {
+        val debris = SpaceDebris(Vector2(5f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(), astronauts = mutableListOf(), debris = mutableListOf(debris),
+            events = mutableListOf(), score = 0)
+
+        physicsSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.debris.isNotEmpty(), "On-screen debris should remain")
+    }
+
+    // ── DarkClone mirroring ───────────────────────────────────
+
+    @Test
+    fun `darkClone position is updated by mirror system`() {
+        val clone = DarkClone(Vector2(10f, 5f))
+        val ctx = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(),
+            enemies = mutableListOf(clone), events = mutableListOf(), score = 0)
+
+        // Record a player action for the mirror system
+        ctx.mirrorSystem.recordPlayerAction(0.0f, ctx.ship, isThrusting = false, isShooting = false)
+        // Set up the mirrored position
+        ctx.ship.position.y = 3f
+        ctx.mirrorSystem.recordPlayerAction(0.5f, ctx.ship, isThrusting = false, isShooting = false)
+
+        // Advance elapsed time so mirror system returns the 0.0s action
+        ctx.elapsedTime = 0.5f
+        physicsSystem.update(0.016f, ctx)
+
+        // The clone Y should be set by the mirror system
+        // At elapsedTime=0.5f, target=0.0f, the mirrored action has ship.position.y=4.5f (initial)
+        assertEquals(4.5f, clone.position.y, 0.01f, "DarkClone Y should mirror recorded ship Y")
     }
 }
