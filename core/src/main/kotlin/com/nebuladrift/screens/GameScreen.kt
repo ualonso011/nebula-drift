@@ -257,6 +257,7 @@ class GameScreen(
 
         // Persist final stats for GameOverScreen
         GameSession.finalScore = score
+        GameSession.finalTime = scoreSystem.elapsedTime
         GameSession.finalTimeFormatted = scoreSystem.formattedTime
         GameSession.asteroidsDestroyed = scoreSystem.asteroidsDestroyed
         GameSession.enemiesDestroyed = scoreSystem.enemiesDestroyed

@@ -13,7 +13,9 @@ import com.nebuladrift.rendering.SpriteAtlas
 import com.nebuladrift.rendering.SpriteGenerator
 import com.nebuladrift.screens.GameOverScreen
 import com.nebuladrift.screens.GameScreen
+import com.nebuladrift.screens.LeaderboardScreen
 import com.nebuladrift.screens.MenuScreen
+import com.nebuladrift.screens.SettingsScreen
 import com.nebuladrift.util.Constants
 import ktx.app.KtxGame
 import ktx.app.KtxScreen
@@ -99,6 +101,8 @@ class NebulaDriftGame : KtxGame<KtxScreen>() {
         addScreen(MenuScreen(this, i18n))
         addScreen(GameScreen(this, i18n, atlas))
         addScreen(GameOverScreen(this, i18n))
+        addScreen(SettingsScreen(this))
+        addScreen(LeaderboardScreen(this, i18n))
         setScreen<MenuScreen>()
     }
 

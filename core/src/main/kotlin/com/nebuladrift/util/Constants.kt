@@ -246,6 +246,10 @@ object Constants {
     /** Duration of the death fade-out animation (seconds). */
     const val ASTRONAUT_DEATH_FADE_DURATION = 0.5f
 
+    // ── Version ────────────────────────────────────────────────
+    /** Current game version (semantic versioning). */
+    const val GAME_VERSION = "0.4.0"
+
     // ── Debug / Toggle ─────────────────────────────────────────
     /** Key code for toggling debug hitbox overlay (F1). */
     const val DEBUG_TOGGLE_KEY = com.badlogic.gdx.Input.Keys.F1

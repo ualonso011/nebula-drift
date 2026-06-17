@@ -35,6 +35,13 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     kotlinOptions.jvmTarget = "17"
 }
 
+sourceSets.named("test") {
+    resources {
+        srcDir(file("${rootProject.projectDir}/assets"))
+    }
+}
+
 tasks.named<Test>("test") {
     useJUnitPlatform()
+    workingDir = file("${layout.buildDirectory.get()}/resources/test")
 }

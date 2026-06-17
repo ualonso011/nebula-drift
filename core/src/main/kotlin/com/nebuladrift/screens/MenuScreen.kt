@@ -13,6 +13,9 @@ import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
+import com.nebuladrift.rendering.UiComponents
+import com.nebuladrift.screens.LeaderboardScreen
+import com.nebuladrift.screens.SettingsScreen
 import com.nebuladrift.util.Constants
 import com.nebuladrift.NebulaDriftGame
 import ktx.app.KtxScreen
@@ -50,6 +53,10 @@ class MenuScreen(
         btnHeight
     )
 
+    // New buttons (bounds calculated in show())
+    private val settingsButtonBounds = Rectangle()
+    private val leaderboardButtonBounds = Rectangle()
+
     // ── High score ────────────────────────────────────────────
     private var highScore: Int = 0
 
@@ -60,6 +67,20 @@ class MenuScreen(
             Constants.WORLD_WIDTH / 2f,
             Constants.WORLD_HEIGHT / 2f,
             0f
+        )
+
+        // Calculate new button bounds
+        settingsButtonBounds.set(
+            viewport.worldWidth - 4f,
+            2f,
+            3f,
+            0.8f
+        )
+        leaderboardButtonBounds.set(
+            1f,
+            2f,
+            3f,
+            0.8f
         )
 
         // Load high score
@@ -83,6 +104,14 @@ class MenuScreen(
 
                 if (playButton.contains(wx, wy)) {
                     game.startTransition { game.setScreen<GameScreen>() }
+                    return true
+                }
+                if (settingsButtonBounds.contains(wx, wy)) {
+                    game.startTransition { game.setScreen<SettingsScreen>() }
+                    return true
+                }
+                if (leaderboardButtonBounds.contains(wx, wy)) {
+                    game.startTransition { game.setScreen<LeaderboardScreen>() }
                     return true
                 }
                 return false
@@ -175,6 +204,12 @@ class MenuScreen(
         }
 
         batch.end()
+
+        // Settings button
+        UiComponents.drawButton(shapeRenderer, batch, font, settingsButtonBounds, game.i18n.get("settings"))
+
+        // Leaderboard button
+        UiComponents.drawButton(shapeRenderer, batch, font, leaderboardButtonBounds, game.i18n.get("leaderboard"))
 
         // Reset font
         font.data.setScale(1f)

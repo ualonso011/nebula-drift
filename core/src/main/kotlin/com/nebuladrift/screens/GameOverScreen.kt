@@ -14,7 +14,10 @@ import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
+import com.nebuladrift.managers.LeaderboardManager
+import com.nebuladrift.rendering.UiComponents
 import com.nebuladrift.util.Constants
+import com.nebuladrift.util.LeaderboardEntry
 import com.nebuladrift.NebulaDriftGame
 import ktx.app.KtxScreen
 
@@ -58,6 +61,12 @@ class GameOverScreen(
         labelKey = "main_menu"
     )
 
+    // ── Name entry (when new high score) ──────────────────────
+    private var showNameEntry = false
+    private val predefinedNames = listOf("Pilot", "Ace", "Nova", "Stryker", "Vega", "Orion")
+    private val nameButtonBounds = mutableListOf<Rectangle>()
+    private val leaderboardButtonBounds = Rectangle()
+
     // ── State ──────────────────────────────────────────────────
     private var isNewRecord = false
 
@@ -84,6 +93,25 @@ class GameOverScreen(
             isNewRecord = false
         }
 
+        // Name entry when leaderboard-qualifying score
+        if (isNewRecord && LeaderboardManager.isHighScore(GameSession.finalScore)) {
+            showNameEntry = true
+            nameButtonBounds.clear()
+            predefinedNames.forEachIndexed { index, _ ->
+                val x = 2f + (index % 3) * 4f
+                val y = 4f - (index / 3) * 1.2f
+                nameButtonBounds.add(Rectangle(x, y, 3.5f, 0.8f))
+            }
+        }
+
+        // Leaderboard button bounds
+        leaderboardButtonBounds.set(
+            viewport.worldWidth / 2 - 1.5f,
+            1.5f,
+            3f,
+            0.8f
+        )
+
         // Play game-over SFX
         AudioManager.stopMusic()
         AudioManager.playSound(Constants.SFX_GAME_OVER)
@@ -104,6 +132,25 @@ class GameOverScreen(
                 val wx = vec.x
                 val wy = vec.y
 
+                // Name entry buttons take priority when visible
+                if (showNameEntry) {
+                    for (i in nameButtonBounds.indices) {
+                        val bounds = nameButtonBounds[i]
+                        if (bounds.contains(wx, wy)) {
+                            LeaderboardManager.addEntry(
+                                LeaderboardEntry(
+                                    name = predefinedNames[i],
+                                    score = GameSession.finalScore,
+                                    time = GameSession.finalTime,
+                                    date = java.util.Date().toString()
+                                )
+                            )
+                            showNameEntry = false
+                            return true
+                        }
+                    }
+                }
+
                 return when {
                     retryButton.bounds.contains(wx, wy) -> {
                         GameSession.reset()
@@ -113,6 +160,10 @@ class GameOverScreen(
                     menuButton.bounds.contains(wx, wy) -> {
                         GameSession.reset()
                         game.startTransition { game.setScreen<MenuScreen>() }
+                        true
+                    }
+                    leaderboardButtonBounds.contains(wx, wy) -> {
+                        game.startTransition { game.setScreen<LeaderboardScreen>() }
                         true
                     }
                     else -> false
@@ -154,6 +205,19 @@ class GameOverScreen(
                 7f,
                 0.8f
             )
+        }
+
+        // Name entry buttons (when applicable)
+        if (showNameEntry) {
+            nameButtonBounds.forEach { bounds ->
+                shapeRenderer.color = Color(0.15f, 0.35f, 0.6f, 1f)
+                shapeRenderer.rect(bounds.x, bounds.y, bounds.width, bounds.height)
+                shapeRenderer.color = Color(0.3f, 0.5f, 0.8f, 1f)
+                shapeRenderer.rect(
+                    bounds.x - 0.03f, bounds.y - 0.03f,
+                    bounds.width + 0.06f, bounds.height + 0.06f
+                )
+            }
         }
 
         shapeRenderer.end()
@@ -239,6 +303,30 @@ class GameOverScreen(
             font.data.setScale(1f)
         }
 
+        // Name entry label + buttons
+        if (showNameEntry) {
+            font.color = Color.YELLOW
+            font.data.setScale(0.8f)
+            val label = i18n.get("enter_name")
+            font.draw(
+                batch,
+                label,
+                Constants.WORLD_WIDTH / 2f - label.length * 0.2f,
+                5f
+            )
+            predefinedNames.forEachIndexed { index, name ->
+                val bounds = nameButtonBounds[index]
+                font.color = Color.WHITE
+                font.draw(
+                    batch,
+                    name,
+                    bounds.x + bounds.width / 2f - name.length * 0.2f,
+                    bounds.y + bounds.height / 2f + 0.25f
+                )
+            }
+            font.data.setScale(1f)
+        }
+
         font.data.setScale(0.8f)
         font.color = Color.WHITE
 
@@ -247,6 +335,9 @@ class GameOverScreen(
         drawButtonLabel(batch, menuButton)
 
         batch.end()
+
+        // Leaderboard button
+        UiComponents.drawButton(shapeRenderer, batch, font, leaderboardButtonBounds, game.i18n.get("leaderboard"))
 
         // Reset font scale for next frame
         font.data.setScale(1f)
@@ -291,6 +382,7 @@ class GameOverScreen(
  */
 object GameSession {
     var finalScore: Int = 0
+    var finalTime: Float = 0f
     var finalTimeFormatted: String = "0:00"
     var asteroidsDestroyed: Int = 0
     var enemiesDestroyed: Int = 0
@@ -299,6 +391,7 @@ object GameSession {
 
     fun reset() {
         finalScore = 0
+        finalTime = 0f
         finalTimeFormatted = "0:00"
         asteroidsDestroyed = 0
         enemiesDestroyed = 0

@@ -2,7 +2,6 @@ package com.nebuladrift.managers
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.utils.I18NBundle
-import java.util.Locale
 
 /**
  * Manages internationalised strings via libGDX [I18NBundle].
@@ -14,24 +13,52 @@ import java.util.Locale
  * - `messages_es.properties`     — Spanish
  * - `messages_en.properties`     — English
  *
+ * Supports runtime locale switching via [setLocale].
+ *
  * Usage:
  * ```kotlin
  * val i18n = I18nManager()
  * i18n.init()
  * val title = i18n.get("title")
+ * i18n.setLocale("es")  // switch to Spanish at runtime
  * ```
  */
 class I18nManager {
 
-    private lateinit var bundle: I18NBundle
+    private var bundle: I18NBundle? = null
+    private var currentLocale = "eu"
 
     /**
      * Initialise the bundle with the default locale (Euskera).
      * Call once during [com.nebuladrift.NebulaDriftGame.create].
      */
-    fun init(locale: Locale = Locale.Builder().setLanguage("eu").setRegion("ES").build()) {
-        val base = Gdx.files.internal("i18n/messages")
-        bundle = I18NBundle.createBundle(base, locale)
+    fun init() {
+        loadBundle(currentLocale)
+    }
+
+    /**
+     * Switch the active locale at runtime.
+     *
+     * Supported values: `"eu"`, `"es"`, `"en"`. Any other value
+     * throws [IllegalArgumentException].
+     *
+     * The [I18NBundle] is reloaded from disk so that subsequent
+     * calls to [get] / [format] return strings in the new locale.
+     */
+    fun setLocale(locale: String) {
+        if (locale !in listOf("eu", "es", "en")) {
+            throw IllegalArgumentException("Unsupported locale: $locale")
+        }
+        currentLocale = locale
+        loadBundle(locale)
+    }
+
+    /** Return the currently active locale code (`"eu"`, `"es"`, or `"en"`). */
+    fun getLocale(): String = currentLocale
+
+    private fun loadBundle(locale: String) {
+        val file = Gdx.files.internal("i18n/messages_$locale")
+        bundle = I18NBundle.createBundle(file)
     }
 
     /**
@@ -39,9 +66,7 @@ class I18nManager {
      * Falls back to `messages.properties` if the key is missing
      * in the active locale.
      */
-    fun get(key: String): String {
-        return bundle[key]
-    }
+    fun get(key: String): String = bundle?.get(key) ?: key
 
     /**
      * Return the translated string with placeholders filled.
@@ -49,6 +74,6 @@ class I18nManager {
      * @param args  Format arguments (e.g. `get("score_format", 1500)`)
      */
     fun format(key: String, vararg args: Any): String {
-        return bundle.format(key, *args)
+        return bundle?.format(key, *args) ?: key
     }
 }
