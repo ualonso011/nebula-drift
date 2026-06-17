@@ -58,11 +58,24 @@ class PhysicsSystem : GameSystem {
             ship.radius,
             Constants.WORLD_WIDTH - ship.radius
         )
-        ship.position.y = MathUtils.clamp(
-            ship.position.y,
-            ship.radius,
-            Constants.WORLD_HEIGHT - ship.radius
-        )
+        
+        // Check if ship fell off the bottom of the screen
+        if (ship.position.y < -ship.radius) {
+            // Ship fell off the bottom - take damage
+            ship.takeDamage()
+            // Reset position to middle-left if not destroyed
+            if (!ship.isDestroyed) {
+                ship.position.y = Constants.WORLD_HEIGHT / 2f
+                ship.velocity.y = 0f
+            }
+        } else {
+            // Clamp to top of screen only
+            ship.position.y = MathUtils.clamp(
+                ship.position.y,
+                -ship.radius, // Allow going slightly below for detection
+                Constants.WORLD_HEIGHT - ship.radius
+            )
+        }
 
         // Update ship timers (invulnerability)
         ship.update(delta)

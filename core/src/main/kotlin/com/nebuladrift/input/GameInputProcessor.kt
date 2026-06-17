@@ -29,9 +29,17 @@ class GameInputProcessor(
 ) : InputProcessor {
 
     override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
-        if (screenX < Gdx.graphics.width / 2) {
+        val screenWidth = Gdx.graphics.width
+        val halfWidth = screenWidth / 2
+        
+        // Debug logging
+        com.badlogic.gdx.Gdx.app.log("GameInput", "touchDown: screenX=$screenX, screenWidth=$screenWidth, halfWidth=$halfWidth")
+        
+        if (screenX < halfWidth) {
+            com.badlogic.gdx.Gdx.app.log("GameInput", "LEFT side - thrust start")
             onThrustStart()
         } else {
+            com.badlogic.gdx.Gdx.app.log("GameInput", "RIGHT side - fire")
             onFire()
         }
         return true

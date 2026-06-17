@@ -21,7 +21,7 @@ enum class DamageState(val livesRemaining: Int) {
  * The [damageState] is derived from remaining lives.
  */
 class Ship(
-    position: Vector2 = Vector2(Constants.WORLD_WIDTH / 2f, Constants.WORLD_HEIGHT / 2f),
+    position: Vector2 = Vector2(2f, Constants.WORLD_HEIGHT / 2f),
     velocity: Vector2 = Vector2.Zero.cpy()
 ) : Entity {
 

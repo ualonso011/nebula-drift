@@ -62,19 +62,22 @@ class PhysicsTest {
     // ── Ship: screen-bounds clamping ─────────────────────────
 
     @Test
-    fun `ship clamped to bottom screen bound`() {
+    fun `ship takes damage when falling off bottom`() {
         val ship = Ship()
         ship.position.y = -10f
         ship.velocity.y = -50f
+        val initialLives = ship.lives
         val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
+        // Ship should take damage and be repositioned to center
+        assertEquals(initialLives - 1, ship.lives, "Ship should lose a life when falling off bottom")
         assertEquals(
-            Constants.SHIP_RADIUS,
+            Constants.WORLD_HEIGHT / 2f,
             ship.position.y,
             0.001f,
-            "Ship should be clamped to bottom of screen"
+            "Ship should be repositioned to center after falling"
         )
     }
 
