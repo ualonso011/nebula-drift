@@ -34,4 +34,6 @@ android {
 dependencies {
     implementation(project(":core"))
     implementation(libs.gdx.backend.android)
+    // Native libraries for libGDX (required for SpriteBatch, Mesh, etc.)
+    implementation("com.badlogicgames.gdx:gdx-platform:1.12.1:natives-android")
 }
