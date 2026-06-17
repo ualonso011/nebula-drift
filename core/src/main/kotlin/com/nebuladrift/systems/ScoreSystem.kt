@@ -1,5 +1,7 @@
 package com.nebuladrift.systems
 
+import com.nebuladrift.entities.enemies.Enemy
+import com.nebuladrift.entities.enemies.EnemyType
 import com.nebuladrift.util.Constants
 
 /**
@@ -21,9 +23,20 @@ class ScoreSystem : GameSystem {
     var asteroidsDestroyed: Int = 0
         private set
 
-    /** Astronauts rescued (placeholder — always 0 in v0.1). */
+    /** Number of astronauts rescued this session. */
     var astronautsRescued: Int = 0
         private set
+
+    /** Number of astronauts killed this session. */
+    var astronautsKilled: Int = 0
+        private set
+
+    /** Total number of enemies destroyed this session. */
+    var enemiesDestroyed: Int = 0
+        private set
+
+    /** Enemies destroyed tracked by type. */
+    private val enemiesDestroyedByTypeMap = mutableMapOf<EnemyType, Int>()
 
     /** Accumulator for the 1-point-per-second time bonus. */
     private var timeAccumulator: Float = 0f
@@ -42,10 +55,40 @@ class ScoreSystem : GameSystem {
         for (event in context.events) {
             when (event) {
                 is GameEvent.AsteroidDestroyed -> asteroidsDestroyed++
-                else -> { /* no-op for now */ }
+                is GameEvent.EnemyDestroyed -> addEnemyKill(event.enemy)
+                is GameEvent.AstronautRescued -> astronautsRescued++
+                is GameEvent.AstronautKilled -> astronautsKilled++
+                else -> { /* DebrisCollected — no stat tracking needed */ }
             }
         }
     }
+
+    /**
+     * Record an enemy kill for both total and per-type stats.
+     */
+    fun addEnemyKill(enemy: Enemy) {
+        enemiesDestroyed++
+        val type = enemy.getType()
+        enemiesDestroyedByTypeMap[type] = (enemiesDestroyedByTypeMap[type] ?: 0) + 1
+    }
+
+    /**
+     * Record an astronaut rescue.
+     */
+    fun addAstronautRescue() {
+        astronautsRescued++
+    }
+
+    /**
+     * Record an astronaut killed.
+     */
+    fun addAstronautKill() {
+        astronautsKilled++
+    }
+
+    /** Returns an immutable snapshot of enemies destroyed by type. */
+    fun getEnemiesDestroyedByType(): Map<EnemyType, Int> =
+        enemiesDestroyedByTypeMap.toMap()
 
     /** Format elapsed time as M:SS. */
     val formattedTime: String
@@ -61,6 +104,9 @@ class ScoreSystem : GameSystem {
         elapsedTime = 0f
         asteroidsDestroyed = 0
         astronautsRescued = 0
+        astronautsKilled = 0
+        enemiesDestroyed = 0
+        enemiesDestroyedByTypeMap.clear()
         timeAccumulator = 0f
     }
 }

@@ -34,9 +34,10 @@ class HudRenderer {
      * @param ship  The player ship (used for lives count)
      * @param score The current score
      * @param timeString  Formatted time string (e.g. "1:05")
+     * @param astronautsRescued  Number of astronauts rescued
      * @param i18n  The i18n manager for translated labels
      */
-    fun render(ship: Ship, score: Int, timeString: String, i18n: I18nManager) {
+    fun render(ship: Ship, score: Int, timeString: String, astronautsRescued: Int = 0, i18n: I18nManager) {
         hudCamera.update()
         batch.projectionMatrix = hudCamera.combined
         batch.begin()
@@ -62,6 +63,13 @@ class HudRenderer {
         font.color = Color.WHITE
         val timeText = "${i18n.get("time")}: $timeString"
         font.draw(batch, timeText, margin, topY - lineHeight * 2)
+
+        // Line 4: Astronauts rescued (if any)
+        if (astronautsRescued > 0) {
+            font.color = Color(0.2f, 0.8f, 0.2f, 1f)
+            val rescueText = "${i18n.get("astronauts_rescued")}: $astronautsRescued"
+            font.draw(batch, rescueText, margin, topY - lineHeight * 3)
+        }
 
         batch.end()
         font.color = Color.WHITE // reset

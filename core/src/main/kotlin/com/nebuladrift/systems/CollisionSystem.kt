@@ -3,8 +3,11 @@ package com.nebuladrift.systems
 import com.badlogic.gdx.math.Vector2
 import com.nebuladrift.entities.Asteroid
 import com.nebuladrift.entities.AsteroidSize
+import com.nebuladrift.entities.Astronaut
 import com.nebuladrift.entities.Entity
 import com.nebuladrift.entities.Laser
+import com.nebuladrift.entities.SpaceDebris
+import com.nebuladrift.entities.enemies.Enemy
 import com.nebuladrift.util.Constants
 import kotlin.math.cos
 import kotlin.math.sin
@@ -25,6 +28,11 @@ class CollisionSystem : GameSystem {
     override fun update(delta: Float, context: GameContext) {
         checkLaserAsteroidCollisions(context)
         checkShipAsteroidCollisions(context)
+        checkLaserEnemyCollisions(context)
+        checkShipEnemyCollisions(context)
+        checkShipAstronautCollisions(context)
+        checkLaserAstronautCollisions(context)
+        checkShipDebrisCollisions(context)
     }
 
     // ── Laser ↔ Asteroid ──────────────────────────────────────
@@ -81,6 +89,113 @@ class CollisionSystem : GameSystem {
         }
 
         context.asteroids.removeAll(toRemove)
+    }
+
+    // ── Laser ↔ Enemy ─────────────────────────────────────────
+
+    private fun checkLaserEnemyCollisions(context: GameContext) {
+        val lasersToRemove = mutableListOf<Laser>()
+        val enemiesToRemove = mutableListOf<Enemy>()
+
+        for (laser in context.lasers) {
+            if (lasersToRemove.contains(laser)) continue
+
+            for (enemy in context.enemies) {
+                if (enemiesToRemove.contains(enemy)) continue
+
+                if (overlap(laser, enemy)) {
+                    lasersToRemove.add(laser)
+
+                    if (enemy.takeDamage()) {
+                        enemiesToRemove.add(enemy)
+                        context.events.add(GameEvent.EnemyDestroyed(enemy, enemy.points))
+                        context.score += enemy.points
+                    }
+                    break
+                }
+            }
+        }
+
+        context.lasers.removeAll(lasersToRemove)
+        context.enemies.removeAll(enemiesToRemove)
+    }
+
+    // ── Ship ↔ Enemy ──────────────────────────────────────────
+
+    private fun checkShipEnemyCollisions(context: GameContext) {
+        val ship = context.ship
+        if (ship.isInvulnerable || ship.isDestroyed) return
+
+        val toRemove = mutableListOf<Enemy>()
+
+        for (enemy in context.enemies) {
+            if (overlap(ship, enemy)) {
+                ship.takeDamage()
+                context.events.add(GameEvent.ShipHit(ship.lives))
+                toRemove.add(enemy)
+                break
+            }
+        }
+
+        context.enemies.removeAll(toRemove)
+    }
+
+    // ── Ship ↔ Astronaut ──────────────────────────────────────
+
+    private fun checkShipAstronautCollisions(context: GameContext) {
+        val ship = context.ship
+        if (ship.isInvulnerable || ship.isDestroyed) return
+
+        for (astronaut in context.astronauts) {
+            if (astronaut.state == Astronaut.State.FLOATING && overlap(ship, astronaut)) {
+                astronaut.rescue()
+                context.events.add(GameEvent.AstronautRescued(astronaut))
+                context.score += Constants.SCORE_ASTRONAUT_RESCUE
+                break
+            }
+        }
+    }
+
+    // ── Laser ↔ Astronaut ─────────────────────────────────────
+
+    private fun checkLaserAstronautCollisions(context: GameContext) {
+        val lasersToRemove = mutableListOf<Laser>()
+
+        for (laser in context.lasers) {
+            if (lasersToRemove.contains(laser)) continue
+
+            for (astronaut in context.astronauts) {
+                if (astronaut.state == Astronaut.State.FLOATING && overlap(laser, astronaut)) {
+                    lasersToRemove.add(laser)
+                    astronaut.kill()
+                    context.events.add(GameEvent.AstronautKilled(astronaut))
+                    context.score -= Constants.SCORE_ASTRONAUT_KILL_PENALTY
+                    break
+                }
+            }
+        }
+
+        context.lasers.removeAll(lasersToRemove)
+    }
+
+    // ── Ship ↔ Debris ─────────────────────────────────────────
+
+    private fun checkShipDebrisCollisions(context: GameContext) {
+        val ship = context.ship
+        if (ship.isDestroyed || ship.lives >= Constants.SHIP_LIVES) return
+
+        val toRemove = mutableListOf<SpaceDebris>()
+
+        for (debris in context.debris) {
+            if (overlap(ship, debris)) {
+                ship.addLife()
+                context.events.add(GameEvent.DebrisCollected(debris))
+                toRemove.add(debris)
+                break
+            }
+        }
+
+        context.debris.removeAll(toRemove)
     }
 
     // ── Helpers ───────────────────────────────────────────────

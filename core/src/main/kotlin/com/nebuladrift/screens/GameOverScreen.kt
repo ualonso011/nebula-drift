@@ -194,6 +194,30 @@ class GameOverScreen(
             4.6f
         )
 
+        // Enemies destroyed
+        font.draw(
+            batch,
+            "${i18n.get("enemies_destroyed")}: ${GameSession.enemiesDestroyed}",
+            btnCenterX - 3f,
+            4.0f
+        )
+
+        // Astronauts rescued
+        font.draw(
+            batch,
+            "${i18n.get("astronauts_rescued")}: ${GameSession.astronautsRescued}",
+            btnCenterX - 3f,
+            3.4f
+        )
+
+        // Astronauts killed
+        font.draw(
+            batch,
+            "${i18n.get("astronauts_killed")}: ${GameSession.astronautsKilled}",
+            btnCenterX - 3f,
+            2.8f
+        )
+
         // New record text
         if (isNewRecord) {
             font.color = Color(0.8f, 0.6f, 0f, 1f)
@@ -261,10 +285,16 @@ object GameSession {
     var finalScore: Int = 0
     var finalTimeFormatted: String = "0:00"
     var asteroidsDestroyed: Int = 0
+    var enemiesDestroyed: Int = 0
+    var astronautsRescued: Int = 0
+    var astronautsKilled: Int = 0
 
     fun reset() {
         finalScore = 0
         finalTimeFormatted = "0:00"
         asteroidsDestroyed = 0
+        enemiesDestroyed = 0
+        astronautsRescued = 0
+        astronautsKilled = 0
     }
 }
