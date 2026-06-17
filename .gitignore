@@ -34,6 +34,7 @@ desktop/build/
 android/build/
 android/.externalNativeBuild/
 android/.gradle/
+android/src/main/jniLibs/
 
 # Local properties (Android SDK path)
 local.properties
