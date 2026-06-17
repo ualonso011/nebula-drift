@@ -113,8 +113,10 @@ class GameScreen(
         hudRenderer.resize(Gdx.graphics.width, Gdx.graphics.height)
 
         gameInputProcessor = GameInputProcessor(
-            onThrustStart = { ship.isThrusting = true },
-            onThrustStop = { ship.isThrusting = false },
+            onFlap = {
+                // Flappy Bird style: instant upward impulse
+                ship.velocity.y = Constants.SHIP_FLAP_VELOCITY
+            },
             onFire = {
                 fireLaser()
                 justFired = true
@@ -170,7 +172,6 @@ class GameScreen(
         mirrorSystem.recordPlayerAction(
             elapsedTime = elapsedTime,
             ship = ship,
-            isThrusting = ship.isThrusting,
             isShooting = justFired
         )
         justFired = false
@@ -203,11 +204,6 @@ class GameScreen(
         // ── Event dispatch (Particles + Audio) ─────────────────
         particleManager.onGameEvent(events)
         AudioManager.onGameEvent(events)
-
-        // ── Engine trail (continuous while thrusting) ─────────
-        if (ship.isThrusting) {
-            particleManager.spawnEngineTrail(ship.position)
-        }
 
         // ── Update particles ──────────────────────────────────
         particleManager.update(delta)

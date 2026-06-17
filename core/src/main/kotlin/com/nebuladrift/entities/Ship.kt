@@ -37,9 +37,6 @@ class Ship(
     var invulnerabilityTimer: Float = 0f
         private set
 
-    /** Whether the ship is currently thrusting (input-driven). */
-    var isThrusting: Boolean = false
-
     /** Whether the ship is within the invulnerability window. */
     val isInvulnerable: Boolean get() = invulnerabilityTimer > 0f
 

@@ -47,16 +47,15 @@ class PhysicsTest {
     }
 
     @Test
-    fun `ship rises when thrusting counters gravity`() {
+    fun `ship rises with upward velocity`() {
         val ship = Ship()
-        ship.isThrusting = true
+        ship.velocity.y = 8f // Flappy Bird style flap velocity
         val initialY = ship.position.y
         val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
-        assertTrue(ship.position.y > initialY, "Ship should rise when thrusting")
-        assertTrue(ship.velocity.y > 0f, "Ship should have upward velocity when thrusting")
+        assertTrue(ship.position.y > initialY, "Ship should rise with upward velocity")
     }
 
     // ── Ship: screen-bounds clamping ─────────────────────────
@@ -492,10 +491,10 @@ class PhysicsTest {
             enemies = mutableListOf(clone), events = mutableListOf(), score = 0)
 
         // Record a player action for the mirror system
-        ctx.mirrorSystem.recordPlayerAction(0.0f, ctx.ship, isThrusting = false, isShooting = false)
+        ctx.mirrorSystem.recordPlayerAction(0.0f, ctx.ship, isShooting = false)
         // Set up the mirrored position
         ctx.ship.position.y = 3f
-        ctx.mirrorSystem.recordPlayerAction(0.5f, ctx.ship, isThrusting = false, isShooting = false)
+        ctx.mirrorSystem.recordPlayerAction(0.5f, ctx.ship, isShooting = false)
 
         // Advance elapsed time so mirror system returns the 0.0s action
         ctx.elapsedTime = 0.5f

@@ -41,11 +41,6 @@ class PhysicsSystem : GameSystem {
         // Constant downward gravity
         ship.velocity.y += Constants.GRAVITY_ACCELERATION * delta
 
-        // Upward thrust while active
-        if (ship.isThrusting) {
-            ship.velocity.y += Constants.SHIP_THRUST * delta
-        }
-
         // Velocity damping (slows the ship naturally)
         ship.velocity.scl(Constants.VELOCITY_DAMPING)
 

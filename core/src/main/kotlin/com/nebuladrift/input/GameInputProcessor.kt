@@ -8,23 +8,21 @@ import com.badlogic.gdx.InputProcessor
  * Handles gameplay input for the ship.
  *
  * Touch/mouse:
- * - Left half of screen (x < screenWidth/2): touch down = start thrust, touch up = stop thrust
- * - Right half of screen (x >= screenWidth/2): touch down = fire laser
+ * - Left half of screen (x < screenWidth/2): tap = flap (instant upward impulse, like Flappy Bird)
+ * - Right half of screen (x >= screenWidth/2): tap = fire laser
  *
  * Keyboard:
- * - A / Left: hold = thrust, release = stop
- * - Space: press = fire laser
+ * - A / Left / Space: tap = flap
+ * - Space: also fires laser (alternative)
  *
  * Designed to be used inside an [com.badlogic.gdx.InputMultiplexer] alongside
  * Scene2D UI processors (added in Phase 3).
  *
- * @param onThrustStart Called when the player starts thrusting
- * @param onThrustStop Called when the player stops thrusting
+ * @param onFlap Called when the player taps to flap (instant upward impulse)
  * @param onFire Called when the player fires a laser
  */
 class GameInputProcessor(
-    private val onThrustStart: () -> Unit,
-    private val onThrustStop: () -> Unit,
+    private val onFlap: () -> Unit,
     private val onFire: () -> Unit
 ) : InputProcessor {
 
@@ -36,8 +34,8 @@ class GameInputProcessor(
         com.badlogic.gdx.Gdx.app.log("GameInput", "touchDown: screenX=$screenX, screenWidth=$screenWidth, halfWidth=$halfWidth")
         
         if (screenX < halfWidth) {
-            com.badlogic.gdx.Gdx.app.log("GameInput", "LEFT side - thrust start")
-            onThrustStart()
+            com.badlogic.gdx.Gdx.app.log("GameInput", "LEFT side - flap")
+            onFlap()
         } else {
             com.badlogic.gdx.Gdx.app.log("GameInput", "RIGHT side - fire")
             onFire()
@@ -46,10 +44,7 @@ class GameInputProcessor(
     }
 
     override fun touchUp(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
-        // Stop thrust on left-half release
-        if (screenX < Gdx.graphics.width / 2) {
-            onThrustStop()
-        }
+        // No action needed for Flappy Bird style input
         return true
     }
 
@@ -64,16 +59,14 @@ class GameInputProcessor(
 
     override fun keyDown(keycode: Int): Boolean {
         when (keycode) {
-            Input.Keys.A, Input.Keys.LEFT -> onThrustStart()
-            Input.Keys.SPACE -> onFire()
+            Input.Keys.A, Input.Keys.LEFT, Input.Keys.SPACE -> onFlap()
+            Input.Keys.UP -> onFire()
         }
         return true
     }
 
     override fun keyUp(keycode: Int): Boolean {
-        when (keycode) {
-            Input.Keys.A, Input.Keys.LEFT -> onThrustStop()
-        }
+        // No action needed for Flappy Bird style input
         return true
     }
 

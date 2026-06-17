@@ -26,7 +26,6 @@ class MirrorSystem {
     data class PlayerAction(
         val time: Float,
         val position: Vector2,
-        val isThrusting: Boolean,
         val isShooting: Boolean
     )
 
@@ -40,11 +39,10 @@ class MirrorSystem {
     fun recordPlayerAction(
         elapsedTime: Float,
         ship: Ship,
-        isThrusting: Boolean,
         isShooting: Boolean
     ) {
         actionQueue.addLast(
-            PlayerAction(elapsedTime, ship.position.cpy(), isThrusting, isShooting)
+            PlayerAction(elapsedTime, ship.position.cpy(), isShooting)
         )
         while (actionQueue.size > Constants.CLONE_MIRROR_QUEUE_SIZE) {
             actionQueue.removeFirst()

@@ -32,7 +32,7 @@ class MirrorTest {
     @Test
     fun `recordPlayerAction stores action with timestamp`() {
         ship.position.set(8f, 4.5f)
-        mirrorSystem.recordPlayerAction(1.0f, ship, isThrusting = true, isShooting = false)
+        mirrorSystem.recordPlayerAction(1.0f, ship, isShooting = false)
 
         val action = mirrorSystem.getMirroredAction(1.0f)
         assertNotNull(action, "Should retrieve action at same timestamp")
@@ -42,7 +42,7 @@ class MirrorTest {
     @Test
     fun `recordPlayerAction stores correct position`() {
         ship.position.set(5f, 3f)
-        mirrorSystem.recordPlayerAction(1.0f, ship, isThrusting = false, isShooting = true)
+        mirrorSystem.recordPlayerAction(1.0f, ship, isShooting = true)
 
         val action = mirrorSystem.getMirroredAction(1.0f)
         assertNotNull(action)
@@ -51,20 +51,19 @@ class MirrorTest {
     }
 
     @Test
-    fun `recordPlayerAction stores thrusting and shooting state`() {
-        mirrorSystem.recordPlayerAction(1.0f, ship, isThrusting = true, isShooting = true)
+    fun `recordPlayerAction stores shooting state`() {
+        mirrorSystem.recordPlayerAction(1.0f, ship, isShooting = true)
         val action = mirrorSystem.getMirroredAction(1.0f)
         assertNotNull(action)
-        assertTrue(action!!.isThrusting, "Thrusting flag should be stored")
-        assertTrue(action.isShooting, "Shooting flag should be stored")
+        assertTrue(action!!.isShooting, "Shooting flag should be stored")
     }
 
     // ── Mirror delay ──────────────────────────────────────────
 
     @Test
     fun `getMirroredAction returns action from approximately half a second ago`() {
-        mirrorSystem.recordPlayerAction(0.0f, ship, isThrusting = false, isShooting = false)
-        mirrorSystem.recordPlayerAction(0.5f, ship, isThrusting = false, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.0f, ship, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.5f, ship, isShooting = false)
 
         // At current time = 0.5s, target = 0.0s -> should get the 0.0s action
         val action = mirrorSystem.getMirroredAction(0.5f)
@@ -74,7 +73,7 @@ class MirrorTest {
 
     @Test
     fun `getMirroredAction returns null when action is too recent`() {
-        mirrorSystem.recordPlayerAction(0.0f, ship, isThrusting = false, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.0f, ship, isShooting = false)
 
         // At current time = 0.6f, delay 0.5f -> target = 0.1f
         // Action at time=0.0 has it.time >= 0.1? No (0.0 < 0.1). Returns null.
@@ -84,8 +83,8 @@ class MirrorTest {
 
     @Test
     fun `getMirroredAction returns the first action at or after target time`() {
-        mirrorSystem.recordPlayerAction(1.0f, ship, isThrusting = true, isShooting = false)
-        mirrorSystem.recordPlayerAction(1.5f, ship, isThrusting = false, isShooting = true)
+        mirrorSystem.recordPlayerAction(1.0f, ship, isShooting = false)
+        mirrorSystem.recordPlayerAction(1.5f, ship, isShooting = true)
 
         // current = 2.0f, target = 1.5f -> should find the 1.5s action (it.time >= 1.5)
         val action = mirrorSystem.getMirroredAction(2.0f)
@@ -99,7 +98,7 @@ class MirrorTest {
     fun `queue maintains CLONE_MIRROR_QUEUE_SIZE entries`() {
         // Record 31 actions (0..30) — queue holds max 30, so time=0 is evicted
         for (i in 0..<Constants.CLONE_MIRROR_QUEUE_SIZE + 1) {
-            mirrorSystem.recordPlayerAction(i.toFloat(), ship, isThrusting = false, isShooting = false)
+            mirrorSystem.recordPlayerAction(i.toFloat(), ship, isShooting = false)
         }
 
         // Queue now has entries 1..30 (30 items). At currentTime=1.0f,
@@ -114,7 +113,7 @@ class MirrorTest {
     fun `most recent actions are still available after queue fills`() {
         val fillCount = Constants.CLONE_MIRROR_QUEUE_SIZE + 10
         for (i in 0..<fillCount) {
-            mirrorSystem.recordPlayerAction(i.toFloat(), ship, isThrusting = false, isShooting = false)
+            mirrorSystem.recordPlayerAction(i.toFloat(), ship, isShooting = false)
         }
 
         // Recent action at fillCount - 1 (time=39) should be available
@@ -127,7 +126,7 @@ class MirrorTest {
     @Test
     fun `queue size never exceeds CLONE_MIRROR_QUEUE_SIZE`() {
         for (i in 0..<50) {
-            mirrorSystem.recordPlayerAction(i.toFloat(), ship, isThrusting = false, isShooting = false)
+            mirrorSystem.recordPlayerAction(i.toFloat(), ship, isShooting = false)
         }
 
         // Queue has at most 30 entries (times 20..49). At currentTime=50f,
@@ -155,13 +154,13 @@ class MirrorTest {
     fun `mirrored position matches recorded position after delay`() {
         // Simulate recording positions over time
         ship.position.set(8f, 3f)
-        mirrorSystem.recordPlayerAction(0.0f, ship, isThrusting = false, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.0f, ship, isShooting = false)
 
         ship.position.set(8f, 4f)
-        mirrorSystem.recordPlayerAction(0.5f, ship, isThrusting = true, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.5f, ship, isShooting = false)
 
         ship.position.set(8f, 5f)
-        mirrorSystem.recordPlayerAction(1.0f, ship, isThrusting = true, isShooting = true)
+        mirrorSystem.recordPlayerAction(1.0f, ship, isShooting = true)
 
         // At 1.5s: target = 1.0s -> should get position.y = 5f
         val action = mirrorSystem.getMirroredAction(1.5f)
@@ -173,8 +172,8 @@ class MirrorTest {
 
     @Test
     fun `reset clears the queue`() {
-        mirrorSystem.recordPlayerAction(0.0f, ship, isThrusting = false, isShooting = false)
-        mirrorSystem.recordPlayerAction(0.5f, ship, isThrusting = false, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.0f, ship, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.5f, ship, isShooting = false)
 
         mirrorSystem.reset()
 
@@ -184,10 +183,10 @@ class MirrorTest {
 
     @Test
     fun `reset enables fresh recording`() {
-        mirrorSystem.recordPlayerAction(0.0f, ship, isThrusting = false, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.0f, ship, isShooting = false)
         mirrorSystem.reset()
 
-        mirrorSystem.recordPlayerAction(10.0f, ship, isThrusting = true, isShooting = true)
+        mirrorSystem.recordPlayerAction(10.0f, ship, isShooting = true)
         val action = mirrorSystem.getMirroredAction(10.0f)
         assertNotNull(action, "After reset and re-record, action should be available")
         assertEquals(10.0f, action!!.time, 0.001f, "New recording should have correct timestamp")
@@ -198,7 +197,7 @@ class MirrorTest {
     @Test
     fun `recorded position is independent of ship position changes`() {
         ship.position.set(8f, 4f)
-        mirrorSystem.recordPlayerAction(0.0f, ship, isThrusting = false, isShooting = false)
+        mirrorSystem.recordPlayerAction(0.0f, ship, isShooting = false)
 
         // Move ship
         ship.position.set(2f, 1f)

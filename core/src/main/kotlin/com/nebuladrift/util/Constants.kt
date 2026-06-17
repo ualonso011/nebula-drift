@@ -16,8 +16,8 @@ object Constants {
     const val GRAVITY_ACCELERATION = -9.8f // units/s²
 
     // ── Ship ───────────────────────────────────────────────────
-    /** Upward impulse applied on tap / A-key. */
-    const val SHIP_THRUST = 15f // units/s²
+    /** Upward velocity applied on tap (Flappy Bird style flap). */
+    const val SHIP_FLAP_VELOCITY = 8f // units/s
 
     /** Radius of the ship's collision circle. */
     const val SHIP_RADIUS = 0.3f

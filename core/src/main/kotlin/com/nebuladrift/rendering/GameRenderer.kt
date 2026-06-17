@@ -119,21 +119,6 @@ class GameRenderer(
                 halfSize * 2f
             )
         }
-
-        // Thrust flame (animated via AnimationManager)
-        if (ship.isThrusting) {
-            val thrustRegion = animationManager.getKeyFrame("thrust", stateTime)
-            if (thrustRegion != null) {
-                val halfSize = ship.radius * 0.8f
-                batch.draw(
-                    thrustRegion,
-                    ship.position.x - halfSize * 0.3f,
-                    ship.position.y - halfSize * 1.4f,
-                    halfSize * 0.6f,
-                    halfSize * 0.4f
-                )
-            }
-        }
     }
 
     // ── Asteroids ────────────────────────────────────────────────
