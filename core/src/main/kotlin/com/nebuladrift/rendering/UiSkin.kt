@@ -10,7 +10,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.Slider.SliderStyle
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
-import com.badlogic.gdx.scenes.scene2d.utils.TintedDrawable
 
 /**
  * Creates a Scene2D [Skin] with fonts from [FontManager], label styles,
@@ -23,14 +22,12 @@ object UiSkin {
 
     private var _skin: Skin? = null
 
-    /** The shared Scene2D skin. Created lazily; requires [FontManager] initialised. */
     val instance: Skin
         get() {
             if (_skin == null) build()
             return _skin!!
         }
 
-    /** True after [instance] has been accessed at least once. */
     val isBuilt: Boolean get() = _skin != null
 
     private fun build() {
@@ -42,9 +39,27 @@ object UiSkin {
         skin.add("body", FontManager.body())
         skin.add("small", FontManager.small())
 
-        // ── White-pixel drawable (base for all tinted shapes) ────
-        val whitePx: Drawable = TextureRegionDrawable(TextureRegion(pixelTexture(Color.WHITE)))
-        skin.add("white", whitePx)
+        // ── Colour drawables (1×1 tinted textures) ──────────────
+        fun colorDrawable(r: Float, g: Float, b: Float, a: Float = 1f): Drawable {
+            val pm = Pixmap(1, 1, Pixmap.Format.RGBA8888)
+            pm.setColor(r, g, b, a)
+            pm.fill()
+            val tex = Texture(pm)
+            pm.dispose()
+            val d = TextureRegionDrawable(TextureRegion(tex))
+            skin.add("_tex_${r}_${g}_${b}", tex) // keep reference for disposal
+            return d
+        }
+
+        val white = colorDrawable(1f, 1f, 1f)
+        val blue800 = colorDrawable(0.15f, 0.35f, 0.6f)   // default button bg
+        val blue600 = colorDrawable(0.1f, 0.25f, 0.5f)    // pressed
+        val blue900 = colorDrawable(0.2f, 0.45f, 0.7f)    // hover
+        val darkBg = colorDrawable(0.2f, 0.2f, 0.25f)     // slider track
+        val lightKnob = colorDrawable(0.8f, 0.8f, 0.9f)   // slider knob
+        val goldBg = colorDrawable(0.8f, 0.6f, 0f, 0.25f) // new-record banner
+
+        skin.add("white", white)
 
         // ── Label styles ────────────────────────────────────────
         skin.add("title-white", LabelStyle(skin.getFont("title"), Color.WHITE))
@@ -57,37 +72,26 @@ object UiSkin {
         skin.add("small-gold", LabelStyle(skin.getFont("small"), Color(0.8f, 0.6f, 0f, 1f)))
 
         // ── TextButton styles ───────────────────────────────────
-        val blueUp = TintedDrawable(whitePx, Color(0.15f, 0.35f, 0.6f, 1f))
-        val blueDown = TintedDrawable(whitePx, Color(0.1f, 0.25f, 0.5f, 1f))
-        val blueOver = TintedDrawable(whitePx, Color(0.2f, 0.45f, 0.7f, 1f))
-        val greenUp = TintedDrawable(whitePx, Color(0.15f, 0.55f, 0.25f, 1f))
-        val greenDown = TintedDrawable(whitePx, Color(0.1f, 0.4f, 0.2f, 1f))
-        val greenOver = TintedDrawable(whitePx, Color(0.2f, 0.65f, 0.3f, 1f))
+        skin.add("default", TextButtonStyle(blue800, blue600, blue900, skin.getFont("body")))
+        skin.add("green", TextButtonStyle(
+            colorDrawable(0.15f, 0.55f, 0.25f),
+            colorDrawable(0.1f, 0.4f, 0.2f),
+            colorDrawable(0.2f, 0.65f, 0.3f),
+            skin.getFont("body")
+        ))
+        skin.add("small-btn", TextButtonStyle(blue800, blue600, blue900, skin.getFont("small")))
 
-        skin.add("default", TextButtonStyle(blueUp, blueDown, blueOver, skin.getFont("body")))
-        skin.add("green", TextButtonStyle(greenUp, greenDown, greenOver, skin.getFont("body")))
-        skin.add("small-btn", TextButtonStyle(blueUp, blueDown, blueOver, skin.getFont("small")))
-
-        // ── Slider styles ───────────────────────────────────────
-        val sliderKnobTex = pixelTexture(Color.WHITE, 12, 12)
-        skin.add("slider-knob", TintedDrawable(TextureRegionDrawable(TextureRegion(sliderKnobTex)), Color(0.8f, 0.8f, 0.9f, 1f)))
-
-        val sliderBg = TintedDrawable(whitePx, Color(0.2f, 0.2f, 0.25f, 1f))
-        sliderBg.minHeight = 8f
-        sliderBg.minWidth = 100f
-        skin.add("default-horizontal", SliderStyle(sliderBg, skin.getDrawable("slider-knob")))
+        // ── Slider knob (12×12) ─────────────────────────────────
+        val knobPm = Pixmap(12, 12, Pixmap.Format.RGBA8888)
+        knobPm.setColor(0.8f, 0.8f, 0.9f, 1f)
+        knobPm.fill()
+        val knobTex = Texture(knobPm)
+        knobPm.dispose()
+        val knobDrawable = TextureRegionDrawable(TextureRegion(knobTex))
+        skin.add("slider-knob", knobTex)
+        skin.add("default-horizontal", SliderStyle(darkBg, knobDrawable))
 
         _skin = skin
-    }
-
-    /** Create a [width]×[height] RGBA8888 texture of the given [color]. */
-    private fun pixelTexture(color: Color, width: Int = 1, height: Int = 1): Texture {
-        val pixmap = Pixmap(width, height, Pixmap.Format.RGBA8888)
-        pixmap.setColor(color)
-        pixmap.fill()
-        val tex = Texture(pixmap)
-        pixmap.dispose()
-        return tex
     }
 
     /** Dispose the skin and all its resources. */

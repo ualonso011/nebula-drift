@@ -224,3 +224,27 @@ class GameOverScreen(
         stage.dispose()
     }
 }
+
+/**
+ * Session-scoped holder for final-score data passed between
+ * [GameScreen] and [GameOverScreen].
+ */
+object GameSession {
+    var finalScore: Int = 0
+    var finalTime: Float = 0f
+    var finalTimeFormatted: String = "0:00"
+    var asteroidsDestroyed: Int = 0
+    var enemiesDestroyed: Int = 0
+    var astronautsRescued: Int = 0
+    var astronautsKilled: Int = 0
+
+    fun reset() {
+        finalScore = 0
+        finalTime = 0f
+        finalTimeFormatted = "0:00"
+        asteroidsDestroyed = 0
+        enemiesDestroyed = 0
+        astronautsRescued = 0
+        astronautsKilled = 0
+    }
+}
