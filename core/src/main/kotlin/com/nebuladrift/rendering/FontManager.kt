@@ -33,6 +33,7 @@ object FontManager {
     private var smallFont: BitmapFont? = null
     private var hudFont: BitmapFont? = null
     private var hudScoreFont: BitmapFont? = null
+    private var spaceFont: BitmapFont? = null
 
     var isInitialized: Boolean = false
         private set
@@ -64,8 +65,25 @@ object FontManager {
             hudScoreFont = generateFont(generator, params, 152) // 4x the original 38
 
             generator.dispose()
+
+            // Load Orbitron for space-themed HUD elements
+            val orbitronFile = Gdx.files.internal("fonts/Orbitron.ttf")
+            if (orbitronFile.exists()) {
+                val orbitronGen = FreeTypeFontGenerator(orbitronFile)
+                val spaceParams = FreeTypeFontParameter().apply {
+                    color = Color.WHITE
+                    borderWidth = 0f
+                    gamma = 1.8f
+                    genMipMaps = false
+                    minFilter = Texture.TextureFilter.Linear
+                    magFilter = Texture.TextureFilter.Linear
+                }
+                spaceFont = generateFont(orbitronGen, spaceParams, 36)
+                orbitronGen.dispose()
+            }
+
             isInitialized = true
-            Gdx.app.log("FontManager", "Fonts initialised successfully (Roboto-Regular)")
+            Gdx.app.log("FontManager", "Fonts initialised successfully (Roboto-Regular + Orbitron)")
         } catch (e: Exception) {
             Gdx.app.error("FontManager", "Failed to generate FreeType fonts: ${e.message}", e)
             createFallbackFonts()
@@ -96,6 +114,7 @@ object FontManager {
         smallFont = BitmapFont()
         hudFont = BitmapFont()
         hudScoreFont = BitmapFont()
+        spaceFont = BitmapFont()
         isInitialized = true
     }
 
@@ -105,10 +124,11 @@ object FontManager {
     fun small(): BitmapFont = smallFont ?: BitmapFont().also { smallFont = it }
     fun hud(): BitmapFont = hudFont ?: BitmapFont().also { hudFont = it }
     fun hudScore(): BitmapFont = hudScoreFont ?: BitmapFont().also { hudScoreFont = it }
+    fun space(): BitmapFont = spaceFont ?: BitmapFont().also { spaceFont = it }
 
     fun dispose() {
         val disposed = mutableSetOf<BitmapFont>()
-        listOf(titleFont, headingFont, bodyFont, smallFont, hudFont, hudScoreFont).forEach { font ->
+        listOf(titleFont, headingFont, bodyFont, smallFont, hudFont, hudScoreFont, spaceFont).forEach { font ->
             if (font != null && font !in disposed) {
                 font.dispose()
                 disposed.add(font)
@@ -120,6 +140,7 @@ object FontManager {
         smallFont = null
         hudFont = null
         hudScoreFont = null
+        spaceFont = null
         isInitialized = false
     }
 }

@@ -3,7 +3,11 @@ package com.nebuladrift.rendering
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
+import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.math.Rectangle
 import com.nebuladrift.entities.Ship
 import com.nebuladrift.managers.I18nManager
 
@@ -11,22 +15,33 @@ import com.nebuladrift.managers.I18nManager
  * Renders the gameplay HUD overlay (lives, score, timer).
  *
  * Uses a separate [OrthographicCamera] in screen-pixel space so that
- * text is crisp regardless of the game-world viewport. Uses [FontManager.hud]
- * for smooth, legible text.
+ * text is crisp regardless of the game-world viewport.
+ *
+ * Design: Score lives inside a semi-transparent card with a subtle
+ * border. Lives are drawn as filled hearts. All HUD text uses the
+ * Orbitron space font for a sci-fi feel.
  */
 class HudRenderer {
 
     private val batch = SpriteBatch()
+    private val shapeRenderer = ShapeRenderer()
     private val hudCamera = OrthographicCamera()
+    private val layout = GlyphLayout()
+
     private val margin = 14f
-    private val lineHeight = 32f
-    private val scoreLineHeight = 152f // taller for the larger score font (152px)
+    private val cardPadding = 16f
+    private val lineHeight = 36f
+    private val heartSize = 28f
+    private val heartSpacing = 34f
 
-    /** Font reference — uses FontManager.hud() for smooth text. */
-    private val font get() = FontManager.hud()
+    /** Space-themed font for score. */
+    private val spaceScoreFont: BitmapFont get() = FontManager.space()
 
-    /** Larger font used for the score line. */
-    private val scoreFont get() = FontManager.hudScore()
+    /** Space-themed font for HUD labels. */
+    private val spaceHudFont: BitmapFont get() = FontManager.space()
+
+    /** Fallback Roboto font for labels. */
+    private val hudFont: BitmapFont get() = FontManager.hud()
 
     /** Call on screen resize to update HUD camera dimensions. */
     fun resize(width: Int, height: Int) {
@@ -45,49 +60,178 @@ class HudRenderer {
     fun render(ship: Ship, score: Int, timeString: String, astronautsRescued: Int = 0, i18n: I18nManager) {
         hudCamera.update()
         batch.projectionMatrix = hudCamera.combined
-        batch.begin()
+        shapeRenderer.projectionMatrix = hudCamera.combined
 
         val topY = hudCamera.viewportHeight - margin
+        val viewportWidth = hudCamera.viewportWidth
 
-        // Line 1: Lives (heart icons + count)
-        val livesColor = when {
-            ship.lives >= 2 -> Color.WHITE
-            ship.lives == 1 -> Color.RED
-            else -> Color.DARK_GRAY
-        }
-        font.color = livesColor
-        val hearts = "\u2665".repeat(ship.lives.coerceAtLeast(0))
-        val livesText = "${i18n.get("lives")}: $hearts"
-        font.draw(batch, livesText, margin, topY)
+        // ── Score Card ────────────────────────────────────────
+        drawScoreCard(viewportWidth, topY, score)
 
-        // Line 2: Score (large font with subtle glow)
-        val scoreText = "${i18n.get("score")}: $score"
-        val scoreY = topY - scoreLineHeight
-        // Glow pass (semi-transparent offset)
-        scoreFont.color = Color(0.4f, 0.6f, 1f, 0.3f)
-        scoreFont.draw(batch, scoreText, margin + 1f, scoreY + 1f)
-        // Main pass
-        scoreFont.color = Color.WHITE
-        scoreFont.draw(batch, scoreText, margin, scoreY)
+        // ── Lives (hearts) ────────────────────────────────────
+        drawHearts(margin, topY - 8f, ship.lives)
 
-        // Line 3: Timer
-        font.color = Color.WHITE
-        val timeText = "${i18n.get("time")}: $timeString"
-        font.draw(batch, timeText, margin, topY - scoreLineHeight - lineHeight)
+        // ── Timer ─────────────────────────────────────────────
+        hudFont.color = Color(0.8f, 0.85f, 0.95f, 1f)
+        val timerLabel = "${i18n.get("time")}: "
+        layout.setText(hudFont, timerLabel)
+        val timerLabelW = layout.width
+        hudFont.draw(batch, timerLabel, margin, topY - heartSize - 16f)
 
-        // Line 4: Astronauts rescued (if any)
+        spaceHudFont.color = Color.WHITE
+        spaceHudFont.data.setScale(0.7f)
+        spaceHudFont.draw(batch, timeString, margin + timerLabelW, topY - heartSize - 16f)
+        spaceHudFont.data.setScale(1f)
+
+        // ── Astronauts rescued ────────────────────────────────
         if (astronautsRescued > 0) {
-            font.color = Color(0.2f, 0.8f, 0.2f, 1f)
-            val rescueText = "${i18n.get("astronauts_rescued")}: $astronautsRescued"
-            font.draw(batch, rescueText, margin, topY - scoreLineHeight - lineHeight * 2)
+            hudFont.color = Color(0.3f, 0.9f, 0.3f, 1f)
+            val rescueLabel = "${i18n.get("astronauts_rescued")}: "
+            layout.setText(hudFont, rescueLabel)
+            val rescueLabelW = layout.width
+            hudFont.draw(batch, rescueLabel, margin, topY - heartSize - 16f - lineHeight)
+
+            spaceHudFont.color = Color(0.3f, 0.9f, 0.3f, 1f)
+            spaceHudFont.data.setScale(0.7f)
+            spaceHudFont.draw(batch, astronautsRescued.toString(), margin + rescueLabelW, topY - heartSize - 16f - lineHeight)
+            spaceHudFont.data.setScale(1f)
         }
 
         batch.end()
-        font.color = Color.WHITE // reset
+        hudFont.color = Color.WHITE
+        spaceHudFont.color = Color.WHITE
+    }
+
+    /**
+     * Draw the score inside a semi-transparent card with a glowing border.
+     */
+    private fun drawScoreCard(viewportWidth: Float, topY: Float, score: Int) {
+        val cardW = viewportWidth * 0.55f
+        val cardH = 130f
+        val cardX = (viewportWidth - cardW) / 2f
+        val cardY = topY - cardH - 4f
+        val cornerRadius = 12f
+
+        // ── Background fill ──
+        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+
+        // Dark translucent background
+        shapeRenderer.setColor(0.05f, 0.08f, 0.18f, 0.75f)
+        drawRoundedRect(shapeRenderer, cardX, cardY, cardW, cardH, cornerRadius)
+
+        // Subtle inner glow (top edge highlight)
+        shapeRenderer.setColor(0.2f, 0.5f, 1f, 0.15f)
+        drawRoundedRect(shapeRenderer, cardX + 2f, cardY + cardH - 6f, cardW - 4f, 4f, 2f)
+
+        shapeRenderer.end()
+
+        // ── Border ──
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
+        shapeRenderer.setColor(0.3f, 0.6f, 1f, 0.5f)
+        drawRoundedRect(shapeRenderer, cardX, cardY, cardW, cardH, cornerRadius)
+        shapeRenderer.end()
+
+        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
+
+        // ── Score text ──
+        batch.begin()
+
+        // "SCORE" label
+        hudFont.color = Color(0.5f, 0.7f, 1f, 0.9f)
+        val scoreLabel = "SCORE"
+        layout.setText(hudFont, scoreLabel)
+        val labelW = layout.width
+        hudFont.draw(batch, scoreLabel, cardX + cardPadding, cardY + cardH - cardPadding)
+
+        // Score number (large space font)
+        spaceScoreFont.color = Color.WHITE
+        spaceScoreFont.data.setScale(2.2f)
+        val scoreText = "%,d".format(score)
+        layout.setText(spaceScoreFont, scoreText)
+        val numW = layout.width
+        spaceScoreFont.draw(batch, scoreText, cardX + (cardW - numW) / 2f, cardY + cardH - cardPadding - lineHeight - 8f)
+        spaceScoreFont.data.setScale(1f)
+    }
+
+    /**
+     * Draw filled hearts for lives.
+     */
+    private fun drawHearts(x: Float, y: Float, lives: Int) {
+        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+
+        for (i in 0 until lives.coerceAtLeast(0)) {
+            val hx = x + i * heartSpacing
+            drawHeart(shapeRenderer, hx, y - heartSize, heartSize)
+        }
+
+        // Draw empty hearts for max lives (3)
+        shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 0.4f)
+        for (i in lives.coerceAtLeast(0) until 3) {
+            val hx = x + i * heartSpacing
+            drawHeart(shapeRenderer, hx, y - heartSize, heartSize)
+        }
+
+        shapeRenderer.end()
+        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
+    }
+
+    /**
+     * Draw a single filled heart shape.
+     */
+    private fun drawHeart(sr: ShapeRenderer, x: Float, y: Float, size: Float) {
+        sr.setColor(1f, 0.2f, 0.3f, 0.9f)
+        val s = size / 2f
+        // Two top circles
+        sr.circle(x + s * 0.35f, y + s * 0.65f, s * 0.42f)
+        sr.circle(x + s * 1.15f, y + s * 0.65f, s * 0.42f)
+        // Bottom triangle (as overlapping circles for simplicity)
+        sr.triangle(
+            x, y + s * 0.55f,
+            x + s * 0.75f, y,
+            x + s * 1.5f, y + s * 0.55f
+        )
+    }
+
+    /**
+     * Draw a rounded rectangle using ShapeRenderer.
+     * Approximates corners with line segments.
+     */
+    private fun drawRoundedRect(sr: ShapeRenderer, x: Float, y: Float, w: Float, h: Float, r: Float) {
+        val segments = 8
+        // Bottom-left corner
+        for (i in 0..segments) {
+            val angle = Math.PI + (Math.PI / 2) * i / segments
+            val px = x + r + (r * Math.cos(angle)).toFloat()
+            val py = y + r + (r * Math.sin(angle)).toFloat()
+            if (i == 0) sr.vertex(px, py, 0f) else sr.vertex(px, py, 0f)
+        }
+        // Bottom-right corner
+        for (i in 0..segments) {
+            val angle = -Math.PI / 2 + (Math.PI / 2) * i / segments
+            val px = x + w - r + (r * Math.cos(angle)).toFloat()
+            val py = y + r + (r * Math.sin(angle)).toFloat()
+            sr.vertex(px, py, 0f)
+        }
+        // Top-right corner
+        for (i in 0..segments) {
+            val angle = 0 + (Math.PI / 2) * i / segments
+            val px = x + w - r + (r * Math.cos(angle)).toFloat()
+            val py = y + h - r + (r * Math.sin(angle)).toFloat()
+            sr.vertex(px, py, 0f)
+        }
+        // Top-left corner
+        for (i in 0..segments) {
+            val angle = Math.PI / 2 + (Math.PI / 2) * i / segments
+            val px = x + r + (r * Math.cos(angle)).toFloat()
+            val py = y + h - r + (r * Math.sin(angle)).toFloat()
+            sr.vertex(px, py, 0f)
+        }
     }
 
     fun dispose() {
         batch.dispose()
-        // FontManager handles font disposal globally
+        shapeRenderer.dispose()
     }
 }
