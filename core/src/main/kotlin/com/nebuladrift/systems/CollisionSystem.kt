@@ -109,6 +109,9 @@ class CollisionSystem : GameSystem {
         val enemiesToRemove = mutableListOf<Enemy>()
 
         for (laser in context.lasers) {
+            // Only player lasers damage enemies — enemy lasers are checked
+            // against the player ship via checkEnemyLaserShipCollisions.
+            if (laser.owner != LaserOwner.PLAYER) continue
             if (lasersToRemove.contains(laser)) continue
 
             for (enemy in context.enemies) {

@@ -11,8 +11,17 @@ android {
         applicationId = "com.nebuladrift"
         minSdk = 21
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.4.2"
+    }
+
+    signingConfigs {
+        create("debug") {
+            storeFile = file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     compileOptions {
