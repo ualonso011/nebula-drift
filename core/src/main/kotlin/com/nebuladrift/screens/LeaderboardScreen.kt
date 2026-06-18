@@ -4,158 +4,138 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.g2d.GlyphLayout
-import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.badlogic.gdx.math.Rectangle
-import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType
+import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.Label
+import com.badlogic.gdx.scenes.scene2d.ui.Skin
+import com.badlogic.gdx.scenes.scene2d.ui.Table
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.viewport.FitViewport
+import com.nebuladrift.NebulaDriftGame
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.managers.LeaderboardManager
-import com.nebuladrift.rendering.FontManager
-import com.nebuladrift.rendering.UiComponents
+import com.nebuladrift.rendering.UiSkin
 import com.nebuladrift.util.Constants
-import com.nebuladrift.NebulaDriftGame
+import com.nebuladrift.util.LeaderboardEntry
 import ktx.app.KtxScreen
 
 /**
- * Displays the top-10 leaderboard with gold/silver/bronze highlights
- * for ranks 1-3 and a Back button that returns to [MenuScreen].
+ * Leaderboard screen using Scene2D.
  *
- * Uses [FontManager] for smooth typography and [GlyphLayout] for
- * exact centering.
- *
- * @property game The game instance for screen transitions
- * @property i18n The i18n manager for translated strings
+ * Displays top-10 high scores with gold/silver/bronze highlights
+ * for ranks 1-3 and a Back button to return to the main menu.
  */
 class LeaderboardScreen(
     private val game: NebulaDriftGame,
     private val i18n: I18nManager
 ) : KtxScreen {
 
-    // ── Rendering ─────────────────────────────────────────────
+    // ── Background ──────────────────────────────────────────────
+    private val bgCamera = OrthographicCamera()
+    private val bgViewport = FitViewport(16f, 9f, bgCamera)
     private val shapeRenderer = ShapeRenderer()
-    private val spriteBatch = SpriteBatch()
-    private val viewport = FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, OrthographicCamera())
 
-    // ── Fonts ─────────────────────────────────────────────────
-    private val headingFont get() = FontManager.heading()
-    private val bodyFont get() = FontManager.body()
-    private val smallFont get() = FontManager.small()
+    // ── UI ──────────────────────────────────────────────────────
+    private val stage = Stage(FitViewport(800f, 450f))
+    private val skin: Skin get() = UiSkin.instance
 
-    // ── Back button ───────────────────────────────────────────
-    private val backButtonBounds = Rectangle(
-        Constants.WORLD_WIDTH / 2f - 1.5f,
-        0.5f,
-        3f,
-        0.8f
-    )
-
-    // ── Colours ───────────────────────────────────────────────
-    private val goldColor = Color(0.8f, 0.6f, 0f, 1f)
-    private val silverColor = Color(0.7f, 0.7f, 0.7f, 1f)
-    private val bronzeColor = Color.valueOf("CD7F32")
-
-    // ── Cached title layout ───────────────────────────────────
-    private val titleText: String get() = i18n.get("leaderboard")
-
-    // ── Lifecycle ─────────────────────────────────────────────
+    // ── Colours ─────────────────────────────────────────────────
+    private val gold = Color(0.8f, 0.6f, 0f, 1f)
+    private val silver = Color(0.7f, 0.7f, 0.7f, 1f)
+    private val bronze = Color(0.8f, 0.5f, 0.2f, 1f)
 
     override fun show() {
-        // Camera is already centred by the FitViewport
+        bgCamera.position.set(8f, 4.5f, 0f)
+
+        // ── Build UI ────────────────────────────────────────────
+        val root = Table()
+        root.setFillParent(true)
+        root.defaults().center()
+
+        // Heading
+        val headingLabel = Label(i18n.get("leaderboard"), skin.get("heading-white", Label.LabelStyle::class.java))
+        root.add(headingLabel).colspan(2).padTop(30f).padBottom(16f).row()
+
+        // Entries
+        val entries = LeaderboardManager.getEntries()
+
+        if (entries.isEmpty()) {
+            val emptyLabel = Label(i18n.get("no_scores"), skin.get("body-gray", Label.LabelStyle::class.java))
+            root.add(emptyLabel).colspan(2).padTop(40f).row()
+        } else {
+            val listTable = Table()
+            listTable.defaults().padBottom(3f)
+
+            entries.forEachIndexed { index, entry ->
+                val rankColor = when (index) {
+                    0 -> gold
+                    1 -> silver
+                    2 -> bronze
+                    else -> Color.WHITE
+                }
+
+                val rank = "#${index + 1}"
+                val timeStr = formatTime(entry.time)
+                val line = "$rank  ${entry.name}  —  ${entry.score} pts  —  $timeStr"
+
+                val entryLabel = Label(line, skin.get("body-white", Label.LabelStyle::class.java))
+                entryLabel.color = rankColor
+                listTable.add(entryLabel).center().row()
+            }
+
+            val scrollContainer = Table()
+            scrollContainer.add(listTable).expand().top()
+            root.add(scrollContainer).colspan(2).expand().fill().padBottom(10f).row()
+        }
+
+        // Back button
+        val backBtn = TextButton(i18n.get("back"), skin.get("small-btn", TextButton.TextButtonStyle::class.java))
+        root.add(backBtn).colspan(2).width(180f).height(40f).padBottom(20f).row()
+
+        stage.addActor(root)
+        Gdx.input.inputProcessor = stage
+
+        // ── Listeners ───────────────────────────────────────────
+        backBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.startTransition { game.setScreen<MenuScreen>() }
+            }
+        })
     }
 
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        viewport.apply()
-        viewport.camera.update()
+        bgViewport.apply()
+        bgCamera.update()
+        shapeRenderer.projectionMatrix = bgCamera.combined
 
-        val entries = LeaderboardManager.getEntries()
-        val vw = viewport.worldWidth
-        val vh = viewport.worldHeight
-
-        // Set projection matrices
-        shapeRenderer.projectionMatrix = viewport.camera.combined
-        spriteBatch.projectionMatrix = viewport.camera.combined
-
-        // ── Background ─────────────────────────────────────────
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        shapeRenderer.begin(ShapeType.Filled)
         shapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
-        shapeRenderer.rect(0f, 0f, vw, vh)
+        shapeRenderer.rect(0f, 0f, 16f, 9f)
         shapeRenderer.end()
 
-        // ── Title ──────────────────────────────────────────────
-        spriteBatch.begin()
-        headingFont.color = Color.WHITE
-        val titleLayout = GlyphLayout(headingFont, titleText)
-        headingFont.draw(spriteBatch, titleText,
-            (vw - titleLayout.width) / 2f, vh - 0.8f)
-        spriteBatch.end()
-
-        // ── Entries or empty state ─────────────────────────────
-        if (entries.isEmpty()) {
-            spriteBatch.begin()
-            bodyFont.color = Color.LIGHT_GRAY
-            val noScores = i18n.get("no_scores")
-            val noScoresLayout = GlyphLayout(bodyFont, noScores)
-            bodyFont.draw(spriteBatch, noScores,
-                (vw - noScoresLayout.width) / 2f, vh / 2f)
-            spriteBatch.end()
-        } else {
-            spriteBatch.begin()
-            entries.forEachIndexed { index, entry ->
-                val y = vh - 2.2f - index * 0.7f
-
-                // Rank colour
-                bodyFont.color = when (index) {
-                    0 -> goldColor
-                    1 -> silverColor
-                    2 -> bronzeColor
-                    else -> Color.WHITE
-                }
-
-                val timeStr = formatTime(entry.time)
-                val text = "#${index + 1}  ${entry.name}  —  ${entry.score} pts  —  $timeStr"
-                val textLayout = GlyphLayout(bodyFont, text)
-                bodyFont.draw(spriteBatch, text,
-                    (vw - textLayout.width) / 2f, y)
-            }
-            spriteBatch.end()
-        }
-
-        // ── Back button ────────────────────────────────────────
-        UiComponents.drawButton(
-            shapeRenderer, spriteBatch, bodyFont,
-            backButtonBounds,
-            i18n.get("back")
-        )
-
-        // ── Input ──────────────────────────────────────────────
-        if (Gdx.input.isTouched) {
-            val screenPos = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
-            viewport.unproject(screenPos)
-            if (UiComponents.isPointInBounds(screenPos.x, screenPos.y, backButtonBounds)) {
-                game.startTransition { game.setScreen<MenuScreen>() }
-            }
-        }
-
-        // Reset font colour
-        bodyFont.color = Color.WHITE
+        stage.act(delta)
+        stage.draw()
     }
 
     override fun resize(width: Int, height: Int) {
-        viewport.update(width, height, true)
+        bgViewport.update(width, height)
+        stage.viewport.update(width, height, true)
+    }
+
+    override fun hide() {
+        Gdx.input.inputProcessor = null
     }
 
     override fun dispose() {
         shapeRenderer.dispose()
-        spriteBatch.dispose()
-        // FontManager handles font disposal globally
+        stage.dispose()
     }
-
-    // ── Helpers ───────────────────────────────────────────────
 
     private fun formatTime(time: Float): String {
         val minutes = (time / 60).toInt()

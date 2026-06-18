@@ -4,238 +4,182 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.g2d.GlyphLayout
-import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.badlogic.gdx.math.Rectangle
-import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType
+import com.badlogic.gdx.scenes.scene2d.Actor
+import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.Label
+import com.badlogic.gdx.scenes.scene2d.ui.Skin
+import com.badlogic.gdx.scenes.scene2d.ui.Slider
+import com.badlogic.gdx.scenes.scene2d.ui.Table
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.viewport.FitViewport
-import com.nebuladrift.managers.AudioManager
-import com.nebuladrift.rendering.FontManager
-import com.nebuladrift.rendering.UiComponents
-import com.nebuladrift.util.Constants
 import com.nebuladrift.NebulaDriftGame
+import com.nebuladrift.managers.AudioManager
+import com.nebuladrift.rendering.UiSkin
+import com.nebuladrift.util.Constants
 import ktx.app.KtxScreen
 
 /**
- * Settings screen with volume sliders, language toggle, and version info.
+ * Settings screen using Scene2D.
  *
- * Uses [FontManager] for smooth typography and [GlyphLayout] for
- * exact centering of all labels.
- *
- * @property game The game instance for screen transitions and i18n
+ * Provides music/SFX volume sliders, a language toggle button,
+ * version info, and a back button — all rendered sharply via
+ * Scene2D on a separate pixel-coordinate stage.
  */
 class SettingsScreen(
     private val game: NebulaDriftGame
 ) : KtxScreen {
 
-    // ── Rendering ─────────────────────────────────────────────
+    // ── Background ──────────────────────────────────────────────
+    private val bgCamera = OrthographicCamera()
+    private val bgViewport = FitViewport(16f, 9f, bgCamera)
     private val shapeRenderer = ShapeRenderer()
-    private val spriteBatch = SpriteBatch()
-    private val viewport = FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, OrthographicCamera())
 
-    // ── Fonts ─────────────────────────────────────────────────
-    private val headingFont get() = FontManager.heading()
-    private val bodyFont get() = FontManager.body()
-    private val smallFont get() = FontManager.small()
+    // ── UI ──────────────────────────────────────────────────────
+    private val stage = Stage(FitViewport(800f, 450f))
+    private val skin: Skin get() = UiSkin.instance
 
-    // ── UI bounds (world units) ───────────────────────────────
-    private val musicSliderBounds = Rectangle()
-    private val sfxSliderBounds = Rectangle()
-    private val languageButtonBounds = Rectangle()
-    private val backButtonBounds = Rectangle()
-
-    // ── Drag state ──────────────────────────────────────────
-    private var isDraggingMusicSlider = false
-    private var isDraggingSfxSlider = false
-
-    // ── Lifecycle ─────────────────────────────────────────────
+    // ── State ───────────────────────────────────────────────────
+    private val i18n get() = game.i18n
 
     override fun show() {
-        val vw = viewport.worldWidth
-        val totalSlidersHeight = 2.5f // sliders take ~2.5 units
-        val startY = viewport.worldHeight - 2.5f
+        bgCamera.position.set(8f, 4.5f, 0f)
 
-        // Music slider: centered
-        musicSliderBounds.set(vw / 2 - 3f, startY, 6f, 0.4f)
+        // ── Build layout ────────────────────────────────────────
+        val root = Table()
+        root.setFillParent(true)
+        root.defaults().center()
 
-        // SFX slider: centered, below music
-        sfxSliderBounds.set(vw / 2 - 3f, startY - 1.8f, 6f, 0.4f)
+        // Heading
+        val headingLabel = Label(i18n.get("settings"), skin.get("heading-white", Label.LabelStyle::class.java))
+        root.add(headingLabel).colspan(2).padTop(30f).padBottom(24f).row()
 
-        // Language button: centered below sliders
-        languageButtonBounds.set(vw / 2 - 2.5f, startY - 3.5f, 5f, 0.9f)
+        // Music volume slider
+        val musicLabel = Label(i18n.get("music_volume"), skin.get("body-white", Label.LabelStyle::class.java))
+        val musicSlider = Slider(0f, 1f, 0.01f, false, skin.get("default-horizontal", Slider.SliderStyle::class.java))
+        musicSlider.value = AudioManager.musicVolume
+        val musicValue = Label(formatPercent(AudioManager.musicVolume), skin.get("small-gray", Label.LabelStyle::class.java))
 
-        // Back button: bottom center
-        backButtonBounds.set(vw / 2 - 1.5f, 0.5f, 3f, 0.8f)
+        musicSlider.addListener(object : ChangeListener() {
+            override fun changed(event: ChangeEvent?, actor: Actor?) {
+                AudioManager.setMusicVolume(musicSlider.value)
+                musicValue.setText(formatPercent(musicSlider.value))
+            }
+        })
+
+        root.add(musicLabel).colspan(2).padBottom(2f).row()
+        val musicRow = Table()
+        musicRow.add(musicSlider).width(300f).height(20f).padRight(10f)
+        musicRow.add(musicValue).width(40f)
+        root.add(musicRow).colspan(2).padBottom(20f).row()
+
+        // SFX volume slider
+        val sfxLabel = Label(i18n.get("sfx_volume"), skin.get("body-white", Label.LabelStyle::class.java))
+        val sfxSlider = Slider(0f, 1f, 0.01f, false, skin.get("default-horizontal", Slider.SliderStyle::class.java))
+        sfxSlider.value = AudioManager.sfxVolume
+        val sfxValue = Label(formatPercent(AudioManager.sfxVolume), skin.get("small-gray", Label.LabelStyle::class.java))
+
+        sfxSlider.addListener(object : ChangeListener() {
+            override fun changed(event: ChangeEvent?, actor: Actor?) {
+                AudioManager.setSfxVolume(sfxSlider.value)
+                sfxValue.setText(formatPercent(sfxSlider.value))
+            }
+        })
+
+        root.add(sfxLabel).colspan(2).padBottom(2f).row()
+        val sfxRow = Table()
+        sfxRow.add(sfxSlider).width(300f).height(20f).padRight(10f)
+        sfxRow.add(sfxValue).width(40f)
+        root.add(sfxRow).colspan(2).padBottom(20f).row()
+
+        // Language button
+        val currentLang = when (i18n.getLocale()) {
+            "eu" -> "Euskera"
+            "es" -> "Español"
+            "en" -> "English"
+            else -> "Euskera"
+        }
+        val langBtn = TextButton("${i18n.get("language")}: $currentLang", skin.get("default", TextButton.TextButtonStyle::class.java))
+        root.add(langBtn).colspan(2).width(280f).height(48f).padBottom(16f).row()
+
+        // Version
+        val versionLabel = Label("v${Constants.GAME_VERSION}", skin.get("small-gray", Label.LabelStyle::class.java))
+        root.add(versionLabel).colspan(2).padBottom(20f).row()
+
+        // Back button
+        val backBtn = TextButton(i18n.get("back"), skin.get("small-btn", TextButton.TextButtonStyle::class.java))
+        root.add(backBtn).colspan(2).width(180f).height(40f).row()
+
+        stage.addActor(root)
+        Gdx.input.inputProcessor = stage
+
+        // ── Listeners ───────────────────────────────────────────
+        langBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                cycleLanguage()
+                langBtn.setText("${i18n.get("language")}: ${currentLangText()}")
+            }
+        })
+        backBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.startTransition { game.setScreen<MenuScreen>() }
+            }
+        })
     }
 
     override fun render(delta: Float) {
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.15f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        viewport.apply()
-        viewport.camera.update()
+        bgViewport.apply()
+        bgCamera.update()
+        shapeRenderer.projectionMatrix = bgCamera.combined
 
-        // Set projection matrices
-        shapeRenderer.projectionMatrix = viewport.camera.combined
-        spriteBatch.projectionMatrix = viewport.camera.combined
-
-        // ── Background ─────────────────────────────────────────
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        shapeRenderer.begin(ShapeType.Filled)
         shapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
-        shapeRenderer.rect(0f, 0f, viewport.worldWidth, viewport.worldHeight)
+        shapeRenderer.rect(0f, 0f, 16f, 9f)
         shapeRenderer.end()
 
-        // ── Title ──────────────────────────────────────────────
-        spriteBatch.begin()
-        headingFont.color = Color.WHITE
-        val title = game.i18n.get("settings")
-        val titleLayout = GlyphLayout(headingFont, title)
-        headingFont.draw(spriteBatch, title,
-            (viewport.worldWidth - titleLayout.width) / 2f,
-            viewport.worldHeight - 0.8f)
-        spriteBatch.end()
-
-        // ── Music slider ───────────────────────────────────────
-        UiComponents.drawSlider(
-            shapeRenderer, spriteBatch, bodyFont,
-            musicSliderBounds,
-            AudioManager.musicVolume,
-            game.i18n.get("music_volume")
-        )
-
-        // ── SFX slider ─────────────────────────────────────────
-        UiComponents.drawSlider(
-            shapeRenderer, spriteBatch, bodyFont,
-            sfxSliderBounds,
-            AudioManager.sfxVolume,
-            game.i18n.get("sfx_volume")
-        )
-
-        // ── Language button ────────────────────────────────────
-        val currentLang = when (game.i18n.getLocale()) {
-            "eu" -> "Euskera"
-            "es" -> "Español"
-            "en" -> "English"
-            else -> "Euskera"
-        }
-        UiComponents.drawButton(
-            shapeRenderer, spriteBatch, bodyFont,
-            languageButtonBounds,
-            "${game.i18n.get("language")}: $currentLang"
-        )
-
-        // ── Version ────────────────────────────────────────────
-        spriteBatch.begin()
-        smallFont.color = Color.GRAY
-        val versionText = "v${Constants.GAME_VERSION}"
-        val versionLayout = GlyphLayout(smallFont, versionText)
-        smallFont.draw(spriteBatch, versionText,
-            (viewport.worldWidth - versionLayout.width) / 2f,
-            1.8f)
-        spriteBatch.end()
-
-        // ── Back button ────────────────────────────────────────
-        UiComponents.drawButton(
-            shapeRenderer, spriteBatch, bodyFont,
-            backButtonBounds,
-            game.i18n.get("back")
-        )
-
-        // ── Input handling ─────────────────────────────────────
-        handleInput()
-
-        // Reset font colours
-        bodyFont.color = Color.WHITE
-        headingFont.color = Color.WHITE
+        stage.act(delta)
+        stage.draw()
     }
 
-    // ── Input ──────────────────────────────────────────────────
-
-    private fun handleInput() {
-        // ── Slider drag (continuous touch) ─────────────────
-        if (Gdx.input.isTouched) {
-            val screenPos = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
-            viewport.unproject(screenPos)
-            val wx = screenPos.x
-            val wy = screenPos.y
-
-            // Start dragging if touching a slider bar
-            if (UiComponents.isPointInBounds(wx, wy, musicSliderBounds)) {
-                isDraggingMusicSlider = true
-            }
-            if (UiComponents.isPointInBounds(wx, wy, sfxSliderBounds)) {
-                isDraggingSfxSlider = true
-            }
-
-            // Update volume while dragging
-            if (isDraggingMusicSlider) {
-                updateMusicVolume(wx)
-            }
-            if (isDraggingSfxSlider) {
-                updateSfxVolume(wx)
-            }
-        } else {
-            // Touch released — clear drag flags
-            isDraggingMusicSlider = false
-            isDraggingSfxSlider = false
-        }
-
-        // ── Button taps (just touched) ─────────────────────
-        if (Gdx.input.justTouched()) {
-            val screenPos = Vector3(Gdx.input.x.toFloat(), Gdx.input.y.toFloat(), 0f)
-            viewport.unproject(screenPos)
-            val wx = screenPos.x
-            val wy = screenPos.y
-
-            // Language toggle
-            if (UiComponents.isPointInBounds(wx, wy, languageButtonBounds)) {
-                cycleLanguage()
-            }
-
-            // Back to menu
-            if (UiComponents.isPointInBounds(wx, wy, backButtonBounds)) {
-                game.startTransition { game.setScreen<MenuScreen>() }
-            }
-        }
+    override fun resize(width: Int, height: Int) {
+        bgViewport.update(width, height)
+        stage.viewport.update(width, height, true)
     }
 
-    // ── Volume helpers ─────────────────────────────────────────
-
-    private fun updateMusicVolume(x: Float) {
-        val value = ((x - musicSliderBounds.x) / musicSliderBounds.width).coerceIn(0f, 1f)
-        AudioManager.setMusicVolume(value)
+    override fun hide() {
+        Gdx.input.inputProcessor = null
     }
 
-    private fun updateSfxVolume(x: Float) {
-        val value = ((x - sfxSliderBounds.x) / sfxSliderBounds.width).coerceIn(0f, 1f)
-        AudioManager.setSfxVolume(value)
+    override fun dispose() {
+        shapeRenderer.dispose()
+        stage.dispose()
     }
 
-    // ── Language toggle ────────────────────────────────────────
+    // ── Helpers ─────────────────────────────────────────────────
+
+    private fun formatPercent(value: Float): String = "${(value * 100).toInt()}%"
+
+    private fun currentLangText(): String = when (i18n.getLocale()) {
+        "eu" -> "Euskera"
+        "es" -> "Español"
+        "en" -> "English"
+        else -> "Euskera"
+    }
 
     private fun cycleLanguage() {
-        val newLocale = when (game.i18n.getLocale()) {
+        val newLocale = when (i18n.getLocale()) {
             "eu" -> "es"
             "es" -> "en"
             "en" -> "eu"
             else -> "eu"
         }
-        game.i18n.setLocale(newLocale)
-        game.startTransition { game.setScreen<MenuScreen>() }
-    }
-
-    // ── Resize ─────────────────────────────────────────────────
-
-    override fun resize(width: Int, height: Int) {
-        viewport.update(width, height, true)
-    }
-
-    // ── Cleanup ────────────────────────────────────────────────
-
-    override fun dispose() {
-        shapeRenderer.dispose()
-        spriteBatch.dispose()
-        // FontManager handles font disposal globally
+        i18n.setLocale(newLocale)
     }
 }
