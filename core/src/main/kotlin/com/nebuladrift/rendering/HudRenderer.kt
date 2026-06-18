@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.badlogic.gdx.math.Rectangle
 import com.nebuladrift.entities.Ship
 import com.nebuladrift.managers.I18nManager
 
@@ -195,39 +194,38 @@ class HudRenderer {
     }
 
     /**
-     * Draw a rounded rectangle using ShapeRenderer.
+     * Draw a rounded rectangle using ShapeRenderer.polygon().
      * Approximates corners with line segments.
      */
     private fun drawRoundedRect(sr: ShapeRenderer, x: Float, y: Float, w: Float, h: Float, r: Float) {
         val segments = 8
+        val verts = mutableListOf<Float>()
+
         // Bottom-left corner
         for (i in 0..segments) {
             val angle = Math.PI + (Math.PI / 2) * i / segments
-            val px = x + r + (r * Math.cos(angle)).toFloat()
-            val py = y + r + (r * Math.sin(angle)).toFloat()
-            if (i == 0) sr.vertex(px, py, 0f) else sr.vertex(px, py, 0f)
+            verts.add(x + r + (r * Math.cos(angle)).toFloat())
+            verts.add(y + r + (r * Math.sin(angle)).toFloat())
         }
         // Bottom-right corner
         for (i in 0..segments) {
             val angle = -Math.PI / 2 + (Math.PI / 2) * i / segments
-            val px = x + w - r + (r * Math.cos(angle)).toFloat()
-            val py = y + r + (r * Math.sin(angle)).toFloat()
-            sr.vertex(px, py, 0f)
+            verts.add(x + w - r + (r * Math.cos(angle)).toFloat())
+            verts.add(y + r + (r * Math.sin(angle)).toFloat())
         }
         // Top-right corner
         for (i in 0..segments) {
             val angle = 0 + (Math.PI / 2) * i / segments
-            val px = x + w - r + (r * Math.cos(angle)).toFloat()
-            val py = y + h - r + (r * Math.sin(angle)).toFloat()
-            sr.vertex(px, py, 0f)
+            verts.add(x + w - r + (r * Math.cos(angle)).toFloat())
+            verts.add(y + h - r + (r * Math.sin(angle)).toFloat())
         }
         // Top-left corner
         for (i in 0..segments) {
             val angle = Math.PI / 2 + (Math.PI / 2) * i / segments
-            val px = x + r + (r * Math.cos(angle)).toFloat()
-            val py = y + h - r + (r * Math.sin(angle)).toFloat()
-            sr.vertex(px, py, 0f)
+            verts.add(x + r + (r * Math.cos(angle)).toFloat())
+            verts.add(y + h - r + (r * Math.sin(angle)).toFloat())
         }
+        sr.polygon(verts.toFloatArray())
     }
 
     fun dispose() {
