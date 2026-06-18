@@ -5,6 +5,10 @@ ktx = "1.12.1-rc2"
 agp = "8.2.0"
 junit = "5.10.1"
 mockk = "1.13.8"
+compose-bom = "2024.02.00"
+activity-compose = "1.8.2"
+navigation-compose = "2.7.7"
+core-ktx = "1.12.0"
 
 [libraries]
 # libGDX core
@@ -24,6 +28,18 @@ ktx-graphics = { module = "io.github.libktx:ktx-graphics", version.ref = "ktx" }
 ktx-assets = { module = "io.github.libktx:ktx-assets", version.ref = "ktx" }
 ktx-math = { module = "io.github.libktx:ktx-math", version.ref = "ktx" }
 ktx-scene2d = { module = "io.github.libktx:ktx-scene2d", version.ref = "ktx" }
+
+# Compose (Android UI)
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+compose-icons = { module = "androidx.compose.material:material-icons-extended" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
+core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
 
 # Testing
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }

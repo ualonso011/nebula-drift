@@ -49,7 +49,13 @@ import com.nebuladrift.NebulaDriftGame
 class GameScreen(
     private val game: NebulaDriftGame,
     private val i18n: I18nManager,
-    private val atlas: SpriteAtlas
+    private val atlas: SpriteAtlas,
+    /**
+     * Optional callback for Android. When set, fired instead of
+     * transitioning to [GameOverScreen] — the host Activity is
+     * expected to handle the result itself.
+     */
+    private val onGameOver: (() -> Unit)? = null,
 ) : KtxScreen {
 
     // ── Rendering ─────────────────────────────────────────────
@@ -260,7 +266,11 @@ class GameScreen(
         GameSession.astronautsRescued = scoreSystem.astronautsRescued
         GameSession.astronautsKilled = scoreSystem.astronautsKilled
 
-        game.startTransition { game.setScreen<GameOverScreen>() }
+        if (onGameOver != null) {
+            onGameOver()
+        } else {
+            game.startTransition { game.setScreen<GameOverScreen>() }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────

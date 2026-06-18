@@ -24,6 +24,14 @@ android {
         jvmTarget = "17"
     }
 
+    buildFeatures {
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -46,6 +54,18 @@ dependencies {
     implementation(libs.gdx.backend.android)
     implementation(libs.gdx.freetype)
 
+    // Compose
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.icons)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.activity.compose)
+    implementation(libs.navigation.compose)
+    implementation(libs.core.ktx)
+    debugImplementation(libs.compose.ui.tooling)
+
     // Native libraries for libGDX
     natives("com.badlogicgames.gdx:gdx-platform:1.12.1:natives-arm64-v8a")
     natives("com.badlogicgames.gdx:gdx-platform:1.12.1:natives-armeabi-v7a")
@@ -61,7 +81,7 @@ tasks.register("extractNatives") {
     doLast {
         val jniLibsDir = file("$projectDir/src/main/jniLibs")
         jniLibsDir.deleteRecursively()
-        
+
         natives.files.forEach { jar ->
             val arch = when {
                 jar.name.contains("arm64-v8a") -> "arm64-v8a"
@@ -70,10 +90,10 @@ tasks.register("extractNatives") {
                 jar.name.contains("x86") -> "x86"
                 else -> throw GradleException("Unknown architecture in ${jar.name}")
             }
-            
+
             val archDir = file("$jniLibsDir/$arch")
             archDir.mkdirs()
-            
+
             copy {
                 from(zipTree(jar))
                 into(archDir)
