@@ -78,10 +78,10 @@ object FontManager {
     private fun generateFont(
         generator: FreeTypeFontGenerator,
         baseParams: FreeTypeFontParameter,
-        size: Int
+        fontSize: Int
     ): BitmapFont {
         val p = FreeTypeFontParameter().apply {
-            size = size
+            size = fontSize
             color = baseParams.color
             borderWidth = baseParams.borderWidth
             gamma = baseParams.gamma
