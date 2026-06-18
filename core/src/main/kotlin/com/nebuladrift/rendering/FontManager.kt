@@ -32,6 +32,7 @@ object FontManager {
     private var bodyFont: BitmapFont? = null
     private var smallFont: BitmapFont? = null
     private var hudFont: BitmapFont? = null
+    private var hudScoreFont: BitmapFont? = null
 
     var isInitialized: Boolean = false
         private set
@@ -60,6 +61,7 @@ object FontManager {
             bodyFont = generateFont(generator, params, 28)
             smallFont = generateFont(generator, params, 18)
             hudFont = generateFont(generator, params, 26)
+            hudScoreFont = generateFont(generator, params, 38) // ~1.46x larger
 
             generator.dispose()
             isInitialized = true
@@ -93,6 +95,7 @@ object FontManager {
         bodyFont = BitmapFont()
         smallFont = BitmapFont()
         hudFont = BitmapFont()
+        hudScoreFont = BitmapFont()
         isInitialized = true
     }
 
@@ -101,10 +104,11 @@ object FontManager {
     fun body(): BitmapFont = bodyFont ?: BitmapFont().also { bodyFont = it }
     fun small(): BitmapFont = smallFont ?: BitmapFont().also { smallFont = it }
     fun hud(): BitmapFont = hudFont ?: BitmapFont().also { hudFont = it }
+    fun hudScore(): BitmapFont = hudScoreFont ?: BitmapFont().also { hudScoreFont = it }
 
     fun dispose() {
         val disposed = mutableSetOf<BitmapFont>()
-        listOf(titleFont, headingFont, bodyFont, smallFont, hudFont).forEach { font ->
+        listOf(titleFont, headingFont, bodyFont, smallFont, hudFont, hudScoreFont).forEach { font ->
             if (font != null && font !in disposed) {
                 font.dispose()
                 disposed.add(font)
@@ -115,6 +119,7 @@ object FontManager {
         bodyFont = null
         smallFont = null
         hudFont = null
+        hudScoreFont = null
         isInitialized = false
     }
 }

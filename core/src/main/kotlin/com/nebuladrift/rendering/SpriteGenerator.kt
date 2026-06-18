@@ -74,6 +74,12 @@ object SpriteGenerator {
     internal fun generateLaserGlowPixmap(): Pixmap =
         createLaserGlowSprite()
 
+    internal fun generateLaserPixmap(color: Color): Pixmap =
+        createLaserSprite(color)
+
+    internal fun generateLaserGlowPixmap(color: Color): Pixmap =
+        createLaserGlowSprite(color)
+
     internal fun generateThrustPixmap(frame: Int): Pixmap =
         createThrustSprite(frame)
 
@@ -133,9 +139,22 @@ object SpriteGenerator {
         map["debris"] = createDebrisSprite()
         map["debris_glow"] = createDebrisGlowSprite()
 
-        // Laser
+        // Laser (default yellow — backward compat)
         map["laser"] = createLaserSprite()
         map["laser_glow"] = createLaserGlowSprite()
+
+        // Laser color variants (5 types × core + glow)
+        val laserColors = listOf(
+            "laser_player"   to Color(0.2f, 1.0f, 0.2f, 1f),
+            "laser_fighter"  to Color(0.2f, 0.8f, 1.0f, 1f),
+            "laser_frigate"  to Color(1.0f, 0.6f, 0.1f, 1f),
+            "laser_destroyer" to Color(1.0f, 0.2f, 0.2f, 1f),
+            "laser_clone"    to Color(0.8f, 0.2f, 0.8f, 1f)
+        )
+        for ((key, color) in laserColors) {
+            map[key] = createLaserSprite(color)
+            map["${key}_glow"] = createLaserGlowSprite(color)
+        }
 
         // Particle (white circle for particle effects)
         map["particle"] = createParticleSprite()
@@ -290,11 +309,11 @@ object SpriteGenerator {
 
         // Base color varies by damage
         val damageRatio = 1f - hp.toFloat() / maxHp.toFloat()
-        val grayBase = 0.35f + damageRatio * 0.25f
+        val grayBase = 0.6f + damageRatio * 0.25f
         
         // Create irregular shape by drawing multiple overlapping circles
         // Main body
-        pix.setColor(0.45f * grayBase, 0.35f * grayBase, 0.3f * grayBase, 1f)
+        pix.setColor(0.55f * grayBase, 0.45f * grayBase, 0.35f * grayBase, 1f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), baseRadius.roundToInt())
         
         // Add irregular bumps around the edge
@@ -859,7 +878,19 @@ object SpriteGenerator {
 
     // ── Laser sprites ────────────────────────────────────────────
 
-    private fun createLaserSprite(): Pixmap {
+    /** Default yellow laser (backward compat). */
+    private fun createLaserSprite(): Pixmap =
+        createLaserSprite(Color(1f, 1f, 0.2f, 1f))
+
+    /** Default yellow glow (backward compat). */
+    private fun createLaserGlowSprite(): Pixmap =
+        createLaserGlowSprite(Color(1f, 1f, 0.4f, 1f))
+
+    /**
+     * Create a laser core pixmap tinted to the given [color].
+     * The center pixel is brightened toward white for a hot-core effect.
+     */
+    private fun createLaserSprite(color: Color): Pixmap {
         val w = Constants.SPRITE_LASER_WIDTH
         val h = Constants.SPRITE_LASER_HEIGHT
         val pix = Pixmap(w, h, Pixmap.Format.RGBA8888)
@@ -869,18 +900,27 @@ object SpriteGenerator {
         val cx = w / 2f
         val cy = h / 2f
 
-        // Yellow rectangle
-        pix.setColor(1f, 1f, 0.2f, 1f)
+        // Colored rectangle
+        pix.setColor(color.r, color.g, color.b, 1f)
         pix.fillRectangle(0, (cy - 1f).roundToInt(), w, 3)
 
-        // Bright center
-        pix.setColor(1f, 1f, 0.8f, 1f)
+        // Bright center (blend toward white)
+        pix.setColor(
+            (color.r * 0.6f + 0.4f).coerceIn(0f, 1f),
+            (color.g * 0.6f + 0.4f).coerceIn(0f, 1f),
+            (color.b * 0.6f + 0.4f).coerceIn(0f, 1f),
+            1f
+        )
         pix.fillRectangle((cx - 2f).roundToInt(), (cy - 1f).roundToInt(), 4, 3)
 
         return pix
     }
 
-    private fun createLaserGlowSprite(): Pixmap {
+    /**
+     * Create a laser glow pixmap tinted to the given [color].
+     * Uses the color hue with lower alpha for the diffuse glow effect.
+     */
+    private fun createLaserGlowSprite(color: Color): Pixmap {
         val w = Constants.SPRITE_LASER_GLOW_WIDTH
         val h = Constants.SPRITE_LASER_GLOW_HEIGHT
         val pix = Pixmap(w, h, Pixmap.Format.RGBA8888)
@@ -891,11 +931,16 @@ object SpriteGenerator {
         val cy = h / 2f
 
         // Diffuse glow
-        pix.setColor(1f, 1f, 0.4f, 0.3f)
+        pix.setColor(color.r, color.g, color.b, 0.3f)
         pix.fillRectangle((cx - w * 0.35f).roundToInt(), 1, (w * 0.7f).roundToInt(), h - 2)
 
-        // Inner glow
-        pix.setColor(1f, 1f, 0.6f, 0.5f)
+        // Inner glow (brighter)
+        pix.setColor(
+            (color.r * 0.6f + 0.4f).coerceIn(0f, 1f),
+            (color.g * 0.6f + 0.4f).coerceIn(0f, 1f),
+            (color.b * 0.6f + 0.4f).coerceIn(0f, 1f),
+            0.5f
+        )
         pix.fillRectangle((cx - w * 0.2f).roundToInt(), (cy - 1f).roundToInt(), (w * 0.4f).roundToInt(), 3)
 
         return pix

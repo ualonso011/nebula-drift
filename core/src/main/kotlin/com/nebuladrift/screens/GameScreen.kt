@@ -11,6 +11,7 @@ import ktx.app.KtxScreen
 import com.nebuladrift.entities.Astronaut
 import com.nebuladrift.entities.Asteroid
 import com.nebuladrift.entities.Laser
+import com.nebuladrift.entities.LaserOwner
 import com.nebuladrift.entities.Ship
 import com.nebuladrift.entities.SpaceDebris
 import com.nebuladrift.entities.enemies.Enemy
@@ -207,6 +208,11 @@ class GameScreen(
         scoreSystem.update(delta, context)
         score = context.score   // sync back mutable score
 
+        // ── Enemy laser cleanup ────────────────────────────────
+        context.lasers.removeAll { laser ->
+            laser.owner != LaserOwner.PLAYER && laser.isExpired
+        }
+
         // ── Event dispatch (Particles + Audio) ─────────────────
         particleManager.onGameEvent(events)
         AudioManager.onGameEvent(events)
@@ -245,7 +251,8 @@ class GameScreen(
                 ship.position.x + ship.radius + 0.2f,
                 ship.position.y
             ),
-            velocity = Vector2(Constants.LASER_SPEED, 0f)
+            velocity = Vector2(Constants.LASER_SPEED, 0f),
+            owner = LaserOwner.PLAYER
         )
         lasers.add(laser)
         events.add(GameEvent.LaserFired(laser))

@@ -1,6 +1,8 @@
 package com.nebuladrift.systems
 
 import com.badlogic.gdx.math.Vector2
+import com.nebuladrift.entities.Laser
+import com.nebuladrift.entities.LaserOwner
 import com.nebuladrift.entities.enemies.DarkClone
 import com.nebuladrift.entities.enemies.Enemy
 import com.nebuladrift.entities.enemies.EnemyType
@@ -11,12 +13,16 @@ import com.nebuladrift.util.Constants
 import kotlin.random.Random
 
 /**
- * Timer-based enemy spawner.
+ * Timer-based enemy spawner + fire controller.
  *
  * Spawns enemies on the right edge of the screen at an interval
  * driven by [DifficultyManager.enemySpawnRateMultiplier]. The
  * type of enemy spawned is determined by the current
  * [DifficultyManager.EnemyTypeWeights] distribution.
+ *
+ * Also handles enemy laser fire: each enemy decrements its
+ * [Enemy.fireCooldown] each frame and fires toward the player
+ * when the timer expires.
  *
  * Respects the safe zone — no enemies spawn during the first
  * [Constants.DIFFICULTY_SAFE_ZONE] seconds.
@@ -32,10 +38,78 @@ class EnemySpawnSystem : GameSystem {
         timeSinceLastSpawn += delta
 
         val spawnInterval = context.difficultyManager.enemySpawnRateMultiplier
-        if (timeSinceLastSpawn < spawnInterval) return
-        timeSinceLastSpawn = 0f
+        if (timeSinceLastSpawn >= spawnInterval) {
+            timeSinceLastSpawn = 0f
+            spawnEnemy(context)
+        }
 
-        spawnEnemy(context)
+        // ── Enemy fire loop ────────────────────────────────────
+        updateEnemyFire(delta, context)
+    }
+
+    // ── Enemy fire loop ──────────────────────────────────────────
+
+    /**
+     * Tick all enemy fire cooldowns and spawn lasers when ready.
+     */
+    private fun updateEnemyFire(delta: Float, context: GameContext) {
+        val ship = context.ship
+        if (ship.isDestroyed) return
+
+        for (enemy in context.enemies) {
+            if (enemy is DarkClone) {
+                // DarkClone fires via MirrorSystem — check flag
+                if (enemy.isFiring) {
+                    fireEnemyLaser(enemy, context, ship.position)
+                    enemy.isFiring = false
+                }
+            } else {
+                enemy.fireCooldown -= delta
+                if (enemy.fireCooldown <= 0f) {
+                    fireEnemyLaser(enemy, context, ship.position)
+                    enemy.fireCooldown = fireCooldownForType(enemy.getType())
+                }
+            }
+        }
+    }
+
+    /**
+     * Create and emit a laser from [enemy] toward [targetPos].
+     */
+    private fun fireEnemyLaser(enemy: Enemy, context: GameContext, targetPos: Vector2) {
+        val owner = when (enemy.getType()) {
+            EnemyType.LIGHT_FIGHTER -> LaserOwner.LIGHT_FIGHTER
+            EnemyType.MEDIUM_FRIGATE -> LaserOwner.MEDIUM_FRIGATE
+            EnemyType.HEAVY_DESTROYER -> LaserOwner.HEAVY_DESTROYER
+            EnemyType.DARK_CLONE -> LaserOwner.DARK_CLONE
+        }
+
+        val direction = Vector2(targetPos).sub(enemy.position).nor()
+        val (laserSpeed, laserRadius) = when (enemy.getType()) {
+            EnemyType.LIGHT_FIGHTER -> Constants.ENEMY_LIGHT_LASER_SPEED to Constants.ENEMY_LIGHT_LASER_RADIUS
+            EnemyType.MEDIUM_FRIGATE -> Constants.ENEMY_MEDIUM_LASER_SPEED to Constants.ENEMY_MEDIUM_LASER_RADIUS
+            EnemyType.HEAVY_DESTROYER -> Constants.ENEMY_HEAVY_LASER_SPEED to Constants.ENEMY_HEAVY_LASER_RADIUS
+            EnemyType.DARK_CLONE -> Constants.ENEMY_CLONE_LASER_SPEED to Constants.ENEMY_CLONE_LASER_RADIUS
+        }
+
+        val laser = Laser(
+            position = enemy.position.cpy(),
+            velocity = direction.scl(laserSpeed),
+            radius = laserRadius,
+            lifetime = Constants.ENEMY_LASER_LIFETIME,
+            owner = owner
+        )
+        context.lasers.add(laser)
+    }
+
+    /**
+     * Return the fire cooldown (seconds) for the given enemy type.
+     */
+    private fun fireCooldownForType(type: EnemyType): Float = when (type) {
+        EnemyType.LIGHT_FIGHTER -> Constants.ENEMY_LIGHT_FIRE_COOLDOWN
+        EnemyType.MEDIUM_FRIGATE -> Constants.ENEMY_MEDIUM_FIRE_COOLDOWN
+        EnemyType.HEAVY_DESTROYER -> Constants.ENEMY_HEAVY_FIRE_COOLDOWN
+        EnemyType.DARK_CLONE -> Constants.ENEMY_CLONE_FIRE_COOLDOWN
     }
 
     private fun spawnEnemy(context: GameContext) {

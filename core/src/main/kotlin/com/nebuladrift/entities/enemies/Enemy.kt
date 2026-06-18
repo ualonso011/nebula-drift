@@ -79,6 +79,9 @@ abstract class Enemy(
     /** Returns the [EnemyType] of this enemy instance. */
     abstract fun getType(): EnemyType
 
+    /** Cooldown timer for enemy laser fire (seconds remaining). */
+    var fireCooldown: Float = 0f
+
     override fun update(delta: Float) {
         position.mulAdd(velocity, delta)
     }

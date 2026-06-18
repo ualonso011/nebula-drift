@@ -6,6 +6,7 @@ import com.nebuladrift.entities.AsteroidSize
 import com.nebuladrift.entities.Astronaut
 import com.nebuladrift.entities.Entity
 import com.nebuladrift.entities.Laser
+import com.nebuladrift.entities.LaserOwner
 import com.nebuladrift.entities.SpaceDebris
 import com.nebuladrift.entities.enemies.Enemy
 import com.nebuladrift.util.Constants
@@ -33,6 +34,10 @@ class CollisionSystem : GameSystem {
         checkShipAstronautCollisions(context)
         checkLaserAstronautCollisions(context)
         checkShipDebrisCollisions(context)
+
+        // Enemy laser collisions (Phase 2 — new)
+        checkEnemyLaserShipCollisions(context)
+        checkEnemyLaserAsteroidCollisions(context)
     }
 
     // ── Laser ↔ Asteroid ──────────────────────────────────────
@@ -204,6 +209,62 @@ class CollisionSystem : GameSystem {
         }
 
         context.debris.removeAll(toRemove)
+    }
+
+    // ── Enemy laser ↔ Ship ─────────────────────────────────────
+
+    /**
+     * Check collisions between enemy lasers and the player ship.
+     * Enemy lasers that overlap the ship will damage it (skip
+     * invulnerability check — already performed by [Ship.takeDamage]).
+     */
+    private fun checkEnemyLaserShipCollisions(context: GameContext) {
+        val ship = context.ship
+        if (ship.isDestroyed) return
+
+        val lasersToRemove = mutableListOf<Laser>()
+
+        for (laser in context.lasers) {
+            if (laser.owner == LaserOwner.PLAYER) continue
+            if (lasersToRemove.contains(laser)) continue
+
+            if (overlap(laser, ship)) {
+                lasersToRemove.add(laser) // always consume the laser on contact
+                if (!ship.isInvulnerable && ship.takeDamage()) {
+                    context.events.add(GameEvent.ShipHit(ship, ship.lives))
+                    if (ship.isDestroyed) {
+                        context.events.add(GameEvent.ShipDestroyed(ship))
+                    }
+                }
+                break // only one hit per frame
+            }
+        }
+
+        context.lasers.removeAll(lasersToRemove)
+    }
+
+    // ── Enemy laser ↔ Asteroid ─────────────────────────────────
+
+    /**
+     * Enemy lasers pass through asteroids — the laser is consumed
+     * but the asteroid takes no damage.
+     */
+    private fun checkEnemyLaserAsteroidCollisions(context: GameContext) {
+        val lasersToRemove = mutableListOf<Laser>()
+
+        for (laser in context.lasers) {
+            if (laser.owner == LaserOwner.PLAYER) continue
+            if (lasersToRemove.contains(laser)) continue
+
+            for (asteroid in context.asteroids) {
+                if (overlap(laser, asteroid)) {
+                    lasersToRemove.add(laser)
+                    break
+                }
+            }
+        }
+
+        context.lasers.removeAll(lasersToRemove)
     }
 
     // ── Helpers ───────────────────────────────────────────────

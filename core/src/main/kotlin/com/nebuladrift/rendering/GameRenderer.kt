@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.nebuladrift.entities.Astronaut
 import com.nebuladrift.entities.AsteroidSize
 import com.nebuladrift.entities.DamageState
+import com.nebuladrift.entities.LaserOwner
 import com.nebuladrift.entities.enemies.EnemyType
 import com.nebuladrift.systems.GameContext
 import com.nebuladrift.util.Constants
@@ -267,8 +268,18 @@ class GameRenderer(
 
     private fun renderLasers(context: GameContext) {
         for (laser in context.lasers) {
+            // Select sprite keys by owner; fall back to default if missing
+            val (coreKey, glowKey) = when (laser.owner) {
+                LaserOwner.PLAYER -> "laser_player" to "laser_player_glow"
+                LaserOwner.LIGHT_FIGHTER -> "laser_fighter" to "laser_fighter_glow"
+                LaserOwner.MEDIUM_FRIGATE -> "laser_frigate" to "laser_frigate_glow"
+                LaserOwner.HEAVY_DESTROYER -> "laser_destroyer" to "laser_destroyer_glow"
+                LaserOwner.DARK_CLONE -> "laser_clone" to "laser_clone_glow"
+            }
+            val glowRegion = atlas.findRegion(glowKey) ?: atlas.findRegion("laser_glow")
+            val coreRegion = atlas.findRegion(coreKey) ?: atlas.findRegion("laser")
+
             // Glow
-            val glowRegion = atlas.findRegion("laser_glow")
             val glowW = laser.radius * 12f
             val glowH = laser.radius * 6f
             batch.draw(
@@ -279,7 +290,6 @@ class GameRenderer(
             )
 
             // Core
-            val coreRegion = atlas.findRegion("laser")
             val coreW = laser.radius * 8f
             val coreH = laser.radius * 2f
             batch.draw(

@@ -27,7 +27,9 @@ class GameActivity : AndroidApplication() {
         val game = GameLoop().also { loop ->
             loop.onGameComplete = { result ->
                 gameResult = result
-                finish()
+                // `finish()` must run on the Android main thread.
+                // libGDX render loop runs on a separate GL thread.
+                runOnUiThread { finish() }
             }
         }
 

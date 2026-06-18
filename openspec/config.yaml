@@ -5,15 +5,13 @@ context: |
   Project: Nebula Drift
   Type: Android game — space survival/shooter with Flappy Bird-style mechanics,
         targeting mobile quality level of Clash Royale / Brawl Stars.
-  Stack: Undecided (greenfield). Candidates: libGDX (Kotlin/Java), Unity (C#),
-         raw Canvas/SurfaceView, or Jetpack Compose.
-  Arch:  Not yet established.
-  Style: Not yet established.
-
-  # Agent conventions
-  Execution mode: auto
-  Chained PR strategy: ask-always
-  Review budget: 400 lines
+  Stack: Kotlin 1.9.24 + libGDX 1.12.1 + KTX 1.12.1-rc2 + AGP 8.2.0
+  Platform: Android (minSdk 21, targetSdk 34), desktop (LWJGL3)
+  Java: 17 (source & target)
+  Modules: core (shared), desktop, android
+  Testing: JUnit 5.10.1 + MockK 1.13.8 + libGDX headless backend
+  Arch: Entity-System pattern with separate rendering, input, and screen layers.
+  CI: GitHub Actions — runs :core:test, assembles debug APK
 
 rules:
   proposal:
@@ -30,22 +28,22 @@ rules:
     - Keep tasks completable in one session
   apply:
     - Follow existing code patterns once established
-    tdd: false
-    test_command: ""    # No test runner detected yet
+    tdd: true
+    test_command: "./gradlew :core:test"
   verify:
-    test_command: ""    # To be defined after stack selection
-    build_command: ""   # To be defined after stack selection
+    test_command: "./gradlew :core:test"
+    build_command: "./gradlew :android:assembleDebug"
     coverage_threshold: 0
   archive:
     - Warn before merging destructive deltas
 
 testing:
-  strict_tdd: false
-  reason: "No test runner detected — project is greenfield with no toolchain installed yet. Strict TDD will be enabled once a stack and test framework are chosen."
+  strict_tdd: true
+  reason: "JUnit 5 test runner detected in core module with existing test suite. Strict TDD enabled by default."
   layers:
     unit:
-      available: false
-      tool: ""
+      available: true
+      tool: "JUnit 5 (Jupiter) + MockK"
     integration:
       available: false
       tool: ""
@@ -60,8 +58,8 @@ testing:
       available: false
       command: ""
     type_checker:
-      available: false
-      command: ""
+      available: true
+      command: "Kotlin compiler (via Gradle)"
     formatter:
       available: false
       command: ""

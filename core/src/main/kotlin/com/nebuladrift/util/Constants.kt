@@ -20,7 +20,7 @@ object Constants {
     const val SHIP_FLAP_VELOCITY = 8f // units/s
 
     /** Radius of the ship's collision circle. */
-    const val SHIP_RADIUS = 0.3f
+    const val SHIP_RADIUS = 0.5f
 
     /** Starting lives. */
     const val SHIP_LIVES = 3
@@ -55,13 +55,13 @@ object Constants {
     const val ASTEROID_MAX_SPEED = 5f // units/s
 
     /** Large asteroid collision radius. */
-    const val ASTEROID_LARGE_RADIUS = 0.8f
+    const val ASTEROID_LARGE_RADIUS = 1.1f
 
     /** Medium asteroid collision radius. */
-    const val ASTEROID_MEDIUM_RADIUS = 0.5f
+    const val ASTEROID_MEDIUM_RADIUS = 0.7f
 
     /** Small asteroid collision radius. */
-    const val ASTEROID_SMALL_RADIUS = 0.3f
+    const val ASTEROID_SMALL_RADIUS = 0.45f
 
     /** Hit points for each size tier. */
     const val ASTEROID_LARGE_HP = 3
@@ -90,18 +90,40 @@ object Constants {
 
     /** Light Fighter (small, fast, 1 HP). */
     const val ENEMY_LIGHT_SPEED = 3f
-    const val ENEMY_LIGHT_RADIUS = 0.25f
+    const val ENEMY_LIGHT_RADIUS = 0.4f
 
     /** Medium Frigate (medium speed, 2 HP). */
     const val ENEMY_MEDIUM_SPEED = 2.5f
-    const val ENEMY_MEDIUM_RADIUS = 0.4f
+    const val ENEMY_MEDIUM_RADIUS = 0.6f
 
     /** Heavy Destroyer (slow, large, 3 HP). */
     const val ENEMY_HEAVY_SPEED = 1.5f
-    const val ENEMY_HEAVY_RADIUS = 0.6f
+    const val ENEMY_HEAVY_RADIUS = 0.9f
 
     /** Dark Clone (mirrors player, 2-3 HP). */
     const val ENEMY_CLONE_SPEED = 2f
+
+    // ── Enemy Fire ──────────────────────────────────────────────
+    /** Cooldown between shots for each enemy type (seconds). */
+    const val ENEMY_LIGHT_FIRE_COOLDOWN = 1.5f
+    const val ENEMY_MEDIUM_FIRE_COOLDOWN = 2.5f
+    const val ENEMY_HEAVY_FIRE_COOLDOWN = 3.5f
+    const val ENEMY_CLONE_FIRE_COOLDOWN = 2.0f
+
+    /** Per-type speed of enemy laser projectiles (units/s). */
+    const val ENEMY_LIGHT_LASER_SPEED = 12f
+    const val ENEMY_MEDIUM_LASER_SPEED = 10f
+    const val ENEMY_HEAVY_LASER_SPEED = 8f
+    const val ENEMY_CLONE_LASER_SPEED = 15f
+
+    /** Per-type collision radius of enemy lasers. */
+    const val ENEMY_LIGHT_LASER_RADIUS = 0.04f
+    const val ENEMY_MEDIUM_LASER_RADIUS = 0.06f
+    const val ENEMY_HEAVY_LASER_RADIUS = 0.08f
+    const val ENEMY_CLONE_LASER_RADIUS = 0.05f
+
+    /** Maximum lifetime of enemy lasers before auto-removal (seconds). */
+    const val ENEMY_LASER_LIFETIME = 3f
 
     // ── Enemy Points ───────────────────────────────────────────
     const val SCORE_LIGHT_FIGHTER = 150
@@ -117,7 +139,7 @@ object Constants {
     const val ASTRONAUT_SPEED = 0.8f
 
     /** Astronaut collision radius. */
-    const val ASTRONAUT_RADIUS = 0.2f
+    const val ASTRONAUT_RADIUS = 0.35f
 
     /** Points awarded for rescuing an astronaut. */
     const val SCORE_ASTRONAUT_RESCUE = 500
