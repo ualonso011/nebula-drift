@@ -2,6 +2,7 @@ package com.nebuladrift.rendering
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
@@ -15,6 +16,10 @@ import com.nebuladrift.managers.I18nManager
  *
  * Uses a separate [OrthographicCamera] in screen-pixel space so that
  * text is crisp regardless of the game-world viewport.
+ *
+ * **Critical invariant**: [ShapeRenderer] and [SpriteBatch] must NEVER be
+ * active at the same time.  All shape passes run first, then all batch
+ * passes.  Violating this crashes on Android GL backends.
  *
  * Design: Score lives inside a semi-transparent card with a subtle
  * border. Lives are drawn as filled hearts. All HUD text uses the
@@ -50,6 +55,10 @@ class HudRenderer {
     /**
      * Draw the HUD for the current frame.
      *
+     * Rendering is split into two strict phases to avoid GL state conflicts:
+     * 1. **Shape phase** — card background, border, hearts (ShapeRenderer)
+     * 2. **Batch phase** — all text (SpriteBatch)
+     *
      * @param ship  The player ship (used for lives count)
      * @param score The current score
      * @param timeString  Formatted time string (e.g. "1:05")
@@ -58,17 +67,24 @@ class HudRenderer {
      */
     fun render(ship: Ship, score: Int, timeString: String, astronautsRescued: Int = 0, i18n: I18nManager) {
         hudCamera.update()
-        batch.projectionMatrix = hudCamera.combined
         shapeRenderer.projectionMatrix = hudCamera.combined
+        batch.projectionMatrix = hudCamera.combined
 
         val topY = hudCamera.viewportHeight - margin
         val viewportWidth = hudCamera.viewportWidth
 
-        // ── Score Card ────────────────────────────────────────
-        drawScoreCard(viewportWidth, topY, score)
-
-        // ── Lives (hearts) ────────────────────────────────────
+        // ════════════════════════════════════════════════════════
+        // PHASE 1: ShapeRenderer — no SpriteBatch active
+        // ════════════════════════════════════════════════════════
+        drawScoreCardShapes(viewportWidth, topY)
         drawHearts(margin, topY - 8f, ship.lives)
+
+        // ════════════════════════════════════════════════════════
+        // PHASE 2: SpriteBatch — no ShapeRenderer active
+        // ════════════════════════════════════════════════════════
+        batch.begin()
+
+        drawScoreCardText(viewportWidth, topY, score)
 
         // ── Timer ─────────────────────────────────────────────
         hudFont.color = Color(0.8f, 0.85f, 0.95f, 1f)
@@ -97,14 +113,17 @@ class HudRenderer {
         }
 
         batch.end()
+
         hudFont.color = Color.WHITE
         spaceHudFont.color = Color.WHITE
     }
 
+    // ── Shape phase ───────────────────────────────────────────
+
     /**
-     * Draw the score inside a semi-transparent card with a glowing border.
+     * Draw the score card background and border (ShapeRenderer only).
      */
-    private fun drawScoreCard(viewportWidth: Float, topY: Float, score: Int) {
+    private fun drawScoreCardShapes(viewportWidth: Float, topY: Float) {
         val cardW = viewportWidth * 0.55f
         val cardH = 130f
         val cardX = (viewportWidth - cardW) / 2f
@@ -112,17 +131,15 @@ class HudRenderer {
         val cornerRadius = 12f
 
         // ── Background fill ──
-        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        Gdx.gl.glEnable(GL20.GL_BLEND)
 
-        // Dark translucent background
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
         shapeRenderer.setColor(0.05f, 0.08f, 0.18f, 0.75f)
         drawRoundedRect(shapeRenderer, cardX, cardY, cardW, cardH, cornerRadius)
 
         // Subtle inner glow (top edge highlight)
         shapeRenderer.setColor(0.2f, 0.5f, 1f, 0.15f)
         drawRoundedRect(shapeRenderer, cardX + 2f, cardY + cardH - 6f, cardW - 4f, 4f, 2f)
-
         shapeRenderer.end()
 
         // ── Border ──
@@ -131,33 +148,14 @@ class HudRenderer {
         drawRoundedRect(shapeRenderer, cardX, cardY, cardW, cardH, cornerRadius)
         shapeRenderer.end()
 
-        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
-
-        // ── Score text ──
-        batch.begin()
-
-        // "SCORE" label
-        hudFont.color = Color(0.5f, 0.7f, 1f, 0.9f)
-        val scoreLabel = "SCORE"
-        layout.setText(hudFont, scoreLabel)
-        val labelW = layout.width
-        hudFont.draw(batch, scoreLabel, cardX + cardPadding, cardY + cardH - cardPadding)
-
-        // Score number (large space font)
-        spaceScoreFont.color = Color.WHITE
-        spaceScoreFont.data.setScale(2.2f)
-        val scoreText = "%,d".format(score)
-        layout.setText(spaceScoreFont, scoreText)
-        val numW = layout.width
-        spaceScoreFont.draw(batch, scoreText, cardX + (cardW - numW) / 2f, cardY + cardH - cardPadding - lineHeight - 8f)
-        spaceScoreFont.data.setScale(1f)
+        Gdx.gl.glDisable(GL20.GL_BLEND)
     }
 
     /**
-     * Draw filled hearts for lives.
+     * Draw filled hearts for lives (ShapeRenderer only).
      */
     private fun drawHearts(x: Float, y: Float, lives: Int) {
-        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
+        Gdx.gl.glEnable(GL20.GL_BLEND)
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
 
         for (i in 0 until lives.coerceAtLeast(0)) {
@@ -173,7 +171,7 @@ class HudRenderer {
         }
 
         shapeRenderer.end()
-        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND)
+        Gdx.gl.glDisable(GL20.GL_BLEND)
     }
 
     /**
@@ -185,13 +183,43 @@ class HudRenderer {
         // Two top circles
         sr.circle(x + s * 0.35f, y + s * 0.65f, s * 0.42f)
         sr.circle(x + s * 1.15f, y + s * 0.65f, s * 0.42f)
-        // Bottom triangle (as overlapping circles for simplicity)
+        // Bottom triangle
         sr.triangle(
             x, y + s * 0.55f,
             x + s * 0.75f, y,
             x + s * 1.5f, y + s * 0.55f
         )
     }
+
+    // ── Batch phase ───────────────────────────────────────────
+
+    /**
+     * Draw the score text inside the card (SpriteBatch only).
+     * Call ONLY between [batch].begin/end.
+     */
+    private fun drawScoreCardText(viewportWidth: Float, topY: Float, score: Int) {
+        val cardW = viewportWidth * 0.55f
+        val cardH = 130f
+        val cardX = (viewportWidth - cardW) / 2f
+        val cardY = topY - cardH - 4f
+
+        // "SCORE" label
+        hudFont.color = Color(0.5f, 0.7f, 1f, 0.9f)
+        val scoreLabel = "SCORE"
+        layout.setText(hudFont, scoreLabel)
+        hudFont.draw(batch, scoreLabel, cardX + cardPadding, cardY + cardH - cardPadding)
+
+        // Score number (large space font)
+        spaceScoreFont.color = Color.WHITE
+        spaceScoreFont.data.setScale(2.2f)
+        val scoreText = "%,d".format(score)
+        layout.setText(spaceScoreFont, scoreText)
+        val numW = layout.width
+        spaceScoreFont.draw(batch, scoreText, cardX + (cardW - numW) / 2f, cardY + cardH - cardPadding - lineHeight - 8f)
+        spaceScoreFont.data.setScale(1f)
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
 
     /**
      * Draw a rounded rectangle using ShapeRenderer.polygon().

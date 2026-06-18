@@ -11,8 +11,8 @@ android {
         applicationId = "com.nebuladrift"
         minSdk = 21
         targetSdk = 34
-        versionCode = 5
-        versionName = "0.4.2"
+        versionCode = 6
+        versionName = "0.4.3"
     }
 
     signingConfigs {
@@ -47,10 +47,14 @@ android {
         }
     }
 
-    // Configure native libraries extraction
+    // Configure native libraries extraction and shared assets
     sourceSets {
         getByName("main") {
             jniLibs.srcDir("src/main/jniLibs")
+            // Include the shared project-level assets/ dir so that fonts,
+            // textures, and i18n are available on Android without duplicating
+            // files into android/src/main/assets/.
+            assets.srcDirs("../assets")
         }
     }
 }
