@@ -54,7 +54,7 @@ android {
             // Include the shared project-level assets/ dir so that fonts,
             // textures, and i18n are available on Android without duplicating
             // files into android/src/main/assets/.
-            assets.srcDirs("../assets")
+            assets.srcDir(file("../assets"))
         }
     }
 }
