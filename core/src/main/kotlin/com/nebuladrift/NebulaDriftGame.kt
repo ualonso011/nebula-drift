@@ -35,7 +35,7 @@ import ktx.app.KtxScreen
  * is called, a [FadeTransition] plays across all screen switches,
  * rendering a fullscreen overlay on top of everything.
  */
-class NebulaDriftGame : KtxGame<KtxScreen>() {
+open class NebulaDriftGame : KtxGame<KtxScreen>() {
 
     /** Shared i18n instance used by all screens. */
     lateinit var i18n: I18nManager

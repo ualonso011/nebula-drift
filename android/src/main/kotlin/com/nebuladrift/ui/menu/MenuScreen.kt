@@ -41,6 +41,7 @@ import com.nebuladrift.ui.theme.NebulaGold
 import com.nebuladrift.ui.theme.NebulaPurple
 import com.nebuladrift.ui.theme.SpaceBlue
 import com.nebuladrift.ui.theme.TextMuted
+import com.nebuladrift.ui.theme.TextPrimary
 import com.nebuladrift.util.GameDataBridge
 import kotlin.random.Random
 

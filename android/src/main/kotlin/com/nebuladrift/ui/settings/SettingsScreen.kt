@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nebuladrift.ui.theme.NebulaCyan
 import com.nebuladrift.ui.theme.NebulaGold
 import com.nebuladrift.ui.theme.SpaceBlue
@@ -35,6 +36,7 @@ import com.nebuladrift.ui.theme.SpaceSurface
 import com.nebuladrift.ui.theme.SpaceSurfaceVariant
 import com.nebuladrift.ui.theme.TextMuted
 import com.nebuladrift.ui.theme.TextPrimary
+import com.nebuladrift.ui.theme.TextSecondary
 import com.nebuladrift.util.GameDataBridge
 
 @Composable
