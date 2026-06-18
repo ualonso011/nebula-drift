@@ -20,7 +20,7 @@ class HudRenderer {
     private val hudCamera = OrthographicCamera()
     private val margin = 14f
     private val lineHeight = 32f
-    private val scoreLineHeight = 44f // taller for the larger score font
+    private val scoreLineHeight = 76f // taller for the larger score font (76px)
 
     /** Font reference — uses FontManager.hud() for smooth text. */
     private val font get() = FontManager.hud()

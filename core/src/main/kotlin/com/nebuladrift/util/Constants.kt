@@ -105,25 +105,25 @@ object Constants {
 
     // ── Enemy Fire ──────────────────────────────────────────────
     /** Cooldown between shots for each enemy type (seconds). */
-    const val ENEMY_LIGHT_FIRE_COOLDOWN = 1.5f
-    const val ENEMY_MEDIUM_FIRE_COOLDOWN = 2.5f
-    const val ENEMY_HEAVY_FIRE_COOLDOWN = 3.5f
-    const val ENEMY_CLONE_FIRE_COOLDOWN = 2.0f
+    const val ENEMY_LIGHT_FIRE_COOLDOWN = 0.8f
+    const val ENEMY_MEDIUM_FIRE_COOLDOWN = 1.2f
+    const val ENEMY_HEAVY_FIRE_COOLDOWN = 1.8f
+    const val ENEMY_CLONE_FIRE_COOLDOWN = 1.0f
 
     /** Per-type speed of enemy laser projectiles (units/s). */
-    const val ENEMY_LIGHT_LASER_SPEED = 12f
-    const val ENEMY_MEDIUM_LASER_SPEED = 10f
-    const val ENEMY_HEAVY_LASER_SPEED = 8f
-    const val ENEMY_CLONE_LASER_SPEED = 15f
+    const val ENEMY_LIGHT_LASER_SPEED = 16f
+    const val ENEMY_MEDIUM_LASER_SPEED = 14f
+    const val ENEMY_HEAVY_LASER_SPEED = 12f
+    const val ENEMY_CLONE_LASER_SPEED = 18f
 
-    /** Per-type collision radius of enemy lasers. */
-    const val ENEMY_LIGHT_LASER_RADIUS = 0.04f
-    const val ENEMY_MEDIUM_LASER_RADIUS = 0.06f
-    const val ENEMY_HEAVY_LASER_RADIUS = 0.08f
-    const val ENEMY_CLONE_LASER_RADIUS = 0.05f
+    /** Per-type collision radius of enemy lasers (visual + hitbox). */
+    const val ENEMY_LIGHT_LASER_RADIUS = 0.08f
+    const val ENEMY_MEDIUM_LASER_RADIUS = 0.12f
+    const val ENEMY_HEAVY_LASER_RADIUS = 0.16f
+    const val ENEMY_CLONE_LASER_RADIUS = 0.10f
 
     /** Maximum lifetime of enemy lasers before auto-removal (seconds). */
-    const val ENEMY_LASER_LIFETIME = 3f
+    const val ENEMY_LASER_LIFETIME = 4f
 
     // ── Enemy Points ───────────────────────────────────────────
     const val SCORE_LIGHT_FIGHTER = 150

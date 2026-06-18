@@ -30,10 +30,10 @@ class GameActivity : AndroidApplication() {
         val game = GameLoop().also { loop ->
             loop.onGameComplete = { result ->
                 gameResult = result
-                // Use Gdx.app.exit() for proper libGDX shutdown.
-                // Internally it posts finish() to the Android main
-                // thread and lets the render loop terminate cleanly.
-                Gdx.app.postRunnable { Gdx.app.exit() }
+                // Gdx.app.exit() tells libGDX to stop rendering BEFORE
+                // posting finish() to the UI handler, avoiding the race
+                // condition between the GL thread and Activity lifecycle.
+                Gdx.app.exit()
             }
         }
 
