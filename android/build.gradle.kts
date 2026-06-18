@@ -47,14 +47,10 @@ android {
         }
     }
 
-    // Configure native libraries extraction and shared assets
+    // Configure native libraries extraction
     sourceSets {
         getByName("main") {
             jniLibs.srcDir("src/main/jniLibs")
-            // Include the shared project-level assets/ dir so that fonts,
-            // textures, and i18n are available on Android without duplicating
-            // files into android/src/main/assets/.
-            assets.srcDir(file("../assets"))
         }
     }
 }
