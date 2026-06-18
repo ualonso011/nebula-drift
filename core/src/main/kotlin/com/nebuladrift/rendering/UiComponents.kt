@@ -14,10 +14,8 @@ import com.badlogic.gdx.math.Rectangle
  * All methods use world-coordinate bounds (via [FitViewport]) so that
  * buttons and sliders render consistently across resolutions.
  *
- * Usage:
- * ```kotlin
- * UiComponents.drawButton(shapeRenderer, spriteBatch, font, bounds, "Play")
- * ```
+ * All text is drawn using [FontManager.body()] for consistency and
+ * readability. Use [GlyphLayout] for all centering operations.
  */
 object UiComponents {
 
@@ -26,10 +24,10 @@ object UiComponents {
      *
      * @param shapeRenderer  The shared shape renderer
      * @param spriteBatch    The shared sprite batch
-     * @param font           The bitmap font for the label
+     * @param font           The bitmap font for the label (use [FontManager.body] typically)
      * @param bounds         World-coordinate rectangle for the button
      * @param label          The text to draw (pre-translated)
-     * @param color          Fill colour of the button (default white)
+     * @param color          Fill colour of the button (default dark blue)
      */
     fun drawButton(
         shapeRenderer: ShapeRenderer,
@@ -37,7 +35,7 @@ object UiComponents {
         font: BitmapFont,
         bounds: Rectangle,
         label: String,
-        color: Color = Color.WHITE
+        color: Color = Color(0.15f, 0.35f, 0.6f, 1f)
     ) {
         // Draw button background
         shapeRenderer.color = color
@@ -46,16 +44,15 @@ object UiComponents {
         shapeRenderer.end()
 
         // Draw button border
-        shapeRenderer.color = Color.WHITE
+        shapeRenderer.color = Color(0.5f, 0.7f, 1f, 1f)
         shapeRenderer.begin(ShapeType.Line)
         shapeRenderer.rect(bounds.x, bounds.y, bounds.width, bounds.height)
         shapeRenderer.end()
 
-        // Draw text centered
+        // Draw text centered using GlyphLayout
         val layout = GlyphLayout(font, label)
-        val textWidth = layout.width
-        val textX = bounds.x + (bounds.width - textWidth) / 2
-        val textY = bounds.y + bounds.height / 2 + font.capHeight / 2
+        val textX = bounds.x + (bounds.width - layout.width) / 2f
+        val textY = bounds.y + bounds.height / 2f + layout.height / 2f
         spriteBatch.begin()
         font.color = Color.WHITE
         font.draw(spriteBatch, label, textX, textY)
@@ -81,9 +78,14 @@ object UiComponents {
         label: String
     ) {
         // Draw label above slider
+        val labelText = "$label: ${(value * 100).toInt()}%"
+        val layout = GlyphLayout(font, labelText)
+        val labelX = bounds.x + (bounds.width - layout.width) / 2f
+        val labelY = bounds.y + bounds.height + layout.height + 0.15f
+
         spriteBatch.begin()
         font.color = Color.WHITE
-        font.draw(spriteBatch, "$label: ${(value * 100).toInt()}%", bounds.x, bounds.y + bounds.height + 25f)
+        font.draw(spriteBatch, labelText, labelX, labelY)
         spriteBatch.end()
 
         // Draw bar background
@@ -100,10 +102,10 @@ object UiComponents {
 
         // Draw thumb
         val thumbX = bounds.x + value * bounds.width
-        val thumbY = bounds.y + bounds.height / 2
+        val thumbY = bounds.y + bounds.height / 2f
         shapeRenderer.color = Color.WHITE
         shapeRenderer.begin(ShapeType.Filled)
-        shapeRenderer.circle(thumbX, thumbY, 12f, 16)
+        shapeRenderer.circle(thumbX, thumbY, bounds.height * 1.5f, 16)
         shapeRenderer.end()
     }
 

@@ -3,7 +3,6 @@ package com.nebuladrift.rendering
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.nebuladrift.entities.Ship
 import com.nebuladrift.managers.I18nManager
@@ -12,16 +11,18 @@ import com.nebuladrift.managers.I18nManager
  * Renders the gameplay HUD overlay (lives, score, timer).
  *
  * Uses a separate [OrthographicCamera] in screen-pixel space so that
- * text is crisp regardless of the game-world viewport. Call [resize]
- * on every screen resize to keep the HUD camera in sync.
+ * text is crisp regardless of the game-world viewport. Uses [FontManager.hud]
+ * for smooth, legible text.
  */
 class HudRenderer {
 
     private val batch = SpriteBatch()
-    private val font = BitmapFont()
     private val hudCamera = OrthographicCamera()
-    private val margin = 12f
-    private val lineHeight = 28f
+    private val margin = 14f
+    private val lineHeight = 32f
+
+    /** Font reference — uses FontManager.hud() for smooth text. */
+    private val font get() = FontManager.hud()
 
     /** Call on screen resize to update HUD camera dimensions. */
     fun resize(width: Int, height: Int) {
@@ -51,7 +52,8 @@ class HudRenderer {
             else -> Color.DARK_GRAY
         }
         font.color = livesColor
-        val livesText = "${i18n.get("lives")}: ${"♥".repeat(ship.lives.coerceAtLeast(0))}"
+        val hearts = "\u2665".repeat(ship.lives.coerceAtLeast(0))
+        val livesText = "${i18n.get("lives")}: $hearts"
         font.draw(batch, livesText, margin, topY)
 
         // Line 2: Score
@@ -77,6 +79,6 @@ class HudRenderer {
 
     fun dispose() {
         batch.dispose()
-        font.dispose()
+        // FontManager handles font disposal globally
     }
 }

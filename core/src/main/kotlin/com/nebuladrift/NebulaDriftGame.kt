@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.rendering.FadeTransition
+import com.nebuladrift.rendering.FontManager
 import com.nebuladrift.rendering.SpriteAtlas
 import com.nebuladrift.rendering.SpriteGenerator
 import com.nebuladrift.screens.GameOverScreen
@@ -97,6 +98,11 @@ class NebulaDriftGame : KtxGame<KtxScreen>() {
             atlas = SpriteGenerator.generateAtlas()
             Gdx.app.log("NebulaDriftGame", "SpriteAtlas generado")
 
+            // Initialise smooth font system (FreeType)
+            Gdx.app.log("NebulaDriftGame", "Inicializando FontManager...")
+            FontManager.init()
+            Gdx.app.log("NebulaDriftGame", "FontManager inicializado")
+
             // Create 1x1 white texture for transition overlay
             Gdx.app.log("NebulaDriftGame", "Creando textura blanca...")
             val pix = Pixmap(1, 1, Pixmap.Format.RGBA8888)
@@ -174,6 +180,7 @@ class NebulaDriftGame : KtxGame<KtxScreen>() {
     override fun dispose() {
         AudioManager.dispose()
         atlas.dispose()
+        FontManager.dispose()
         whiteTexture?.dispose()
         transitionBatch.dispose()
         super.dispose()

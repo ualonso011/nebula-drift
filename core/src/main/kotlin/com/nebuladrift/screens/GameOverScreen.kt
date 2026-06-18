@@ -6,7 +6,7 @@ import com.badlogic.gdx.InputProcessor
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Rectangle
@@ -15,6 +15,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport
 import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.managers.LeaderboardManager
+import com.nebuladrift.rendering.FontManager
 import com.nebuladrift.rendering.UiComponents
 import com.nebuladrift.util.Constants
 import com.nebuladrift.util.LeaderboardEntry
@@ -25,7 +26,8 @@ import ktx.app.KtxScreen
  * Displays the final score and offers Retry / Main Menu options.
  *
  * Score data is received via [GameSession] (set by [GameScreen]
- * before transitioning).
+ * before transitioning). Uses [FontManager] for smooth typography
+ * and [GlyphLayout] for exact centering.
  *
  * @property game The game instance for screen transitions
  * @property i18n The i18n manager for translated strings
@@ -40,7 +42,11 @@ class GameOverScreen(
     private val viewport = FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, camera)
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
-    private val font = BitmapFont()
+
+    // ── Fonts ─────────────────────────────────────────────────
+    private val headingFont get() = FontManager.heading()
+    private val bodyFont get() = FontManager.body()
+    private val smallFont get() = FontManager.small()
 
     // ── Button definitions (world coordinates) ─────────────────
     private data class ButtonDef(
@@ -48,16 +54,16 @@ class GameOverScreen(
         val labelKey: String
     )
 
-    private val btnWidth = 6f
+    private val btnWidth = 7f
     private val btnHeight = 1.2f
     private val btnCenterX = Constants.WORLD_WIDTH / 2f
 
     private val retryButton = ButtonDef(
-        bounds = Rectangle(btnCenterX - btnWidth / 2f, 2.5f, btnWidth, btnHeight),
+        bounds = Rectangle(btnCenterX - btnWidth / 2f, 2.8f, btnWidth, btnHeight),
         labelKey = "retry"
     )
     private val menuButton = ButtonDef(
-        bounds = Rectangle(btnCenterX - btnWidth / 2f, 0.8f, btnWidth, btnHeight),
+        bounds = Rectangle(btnCenterX - btnWidth / 2f, 1.0f, btnWidth, btnHeight),
         labelKey = "main_menu"
     )
 
@@ -72,6 +78,11 @@ class GameOverScreen(
 
     /** The input processor for this screen. */
     private lateinit var inputProcessor: InputProcessor
+
+    // ── Cached labels ─────────────────────────────────────────
+    private val gameOverText: String get() = i18n.get("game_over")
+    private val newRecordText: String get() = i18n.get("new_record")
+    private val enterNameText: String get() = i18n.get("enter_name")
 
     // ── Lifecycle ─────────────────────────────────────────────
 
@@ -98,18 +109,18 @@ class GameOverScreen(
             showNameEntry = true
             nameButtonBounds.clear()
             predefinedNames.forEachIndexed { index, _ ->
-                val x = 2f + (index % 3) * 4f
-                val y = 4f - (index / 3) * 1.2f
-                nameButtonBounds.add(Rectangle(x, y, 3.5f, 0.8f))
+                val x = 1.5f + (index % 3) * 4.5f
+                val y = 5.0f - (index / 3) * 1.4f
+                nameButtonBounds.add(Rectangle(x, y, 3.8f, 0.9f))
             }
         }
 
         // Leaderboard button bounds
         leaderboardButtonBounds.set(
-            viewport.worldWidth / 2 - 1.5f,
-            1.5f,
-            3f,
-            0.8f
+            Constants.WORLD_WIDTH / 2f - 2f,
+            0.3f,
+            4f,
+            0.6f
         )
 
         // Play game-over SFX
@@ -126,7 +137,6 @@ class GameOverScreen(
                 pointer: Int,
                 button: Int
             ): Boolean {
-                // Convert screen → world coordinates
                 val vec = Vector3(screenX.toFloat(), screenY.toFloat(), 0f)
                 viewport.unproject(vec)
                 val wx = vec.x
@@ -188,9 +198,16 @@ class GameOverScreen(
         viewport.apply()
         camera.update()
 
+        val projMatrix = camera.combined
+        shapeRenderer.projectionMatrix = projMatrix
+        batch.projectionMatrix = projMatrix
+
         // ── Render shapes ────────────────────────────────────
-        shapeRenderer.projectionMatrix = camera.combined
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+
+        // Dark background
+        shapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
+        shapeRenderer.rect(0f, 0f, Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT)
 
         // Buttons
         drawButton(shapeRenderer, retryButton)
@@ -201,7 +218,7 @@ class GameOverScreen(
             shapeRenderer.color = Color(0.8f, 0.6f, 0f, 1f) // gold
             shapeRenderer.rect(
                 Constants.WORLD_WIDTH / 2f - 3.5f,
-                6f,
+                6.2f,
                 7f,
                 0.8f
             )
@@ -223,112 +240,74 @@ class GameOverScreen(
         shapeRenderer.end()
 
         // ── Render text ──────────────────────────────────────
-        batch.projectionMatrix = camera.combined
         batch.begin()
 
-        // Scale font for larger titles
-        font.data.setScale(1.5f)
-
         // "GAME OVER" title
-        font.color = Color.RED
-        val gameOverText = i18n.get("game_over")
-        font.draw(
-            batch,
-            gameOverText,
-            Constants.WORLD_WIDTH / 2f - gameOverText.length * 0.25f,
-            Constants.WORLD_HEIGHT - 1f
-        )
-
-        font.data.setScale(1f)
-        font.color = Color.WHITE
+        headingFont.color = Color.RED
+        val goLayout = GlyphLayout(headingFont, gameOverText)
+        headingFont.draw(batch, gameOverText,
+            Constants.WORLD_WIDTH / 2f - goLayout.width / 2f,
+            Constants.WORLD_HEIGHT - 0.8f)
 
         // Score
-        font.draw(
-            batch,
-            "${i18n.get("score")}: ${GameSession.finalScore}",
-            btnCenterX - 3f,
-            5.8f
-        )
+        bodyFont.color = Color.WHITE
+        val scoreText = "${i18n.get("score")}: ${GameSession.finalScore}"
+        val scoreLayout = GlyphLayout(bodyFont, scoreText)
+        bodyFont.draw(batch, scoreText,
+            btnCenterX - scoreLayout.width / 2f, 6.0f)
 
         // Time
-        font.draw(
-            batch,
-            "${i18n.get("time")}: ${GameSession.finalTimeFormatted}",
-            btnCenterX - 3f,
-            5.2f
-        )
+        val timeText = "${i18n.get("time")}: ${GameSession.finalTimeFormatted}"
+        val timeLayout = GlyphLayout(bodyFont, timeText)
+        bodyFont.draw(batch, timeText,
+            btnCenterX - timeLayout.width / 2f, 5.4f)
 
         // Asteroids destroyed
-        font.draw(
-            batch,
-            "${i18n.get("asteroids_destroyed")}: ${GameSession.asteroidsDestroyed}",
-            btnCenterX - 3f,
-            4.6f
-        )
+        val astText = "${i18n.get("asteroids_destroyed")}: ${GameSession.asteroidsDestroyed}"
+        bodyFont.draw(batch, astText,
+            btnCenterX - GlyphLayout(bodyFont, astText).width / 2f, 4.8f)
 
         // Enemies destroyed
-        font.draw(
-            batch,
-            "${i18n.get("enemies_destroyed")}: ${GameSession.enemiesDestroyed}",
-            btnCenterX - 3f,
-            4.0f
-        )
+        val enText = "${i18n.get("enemies_destroyed")}: ${GameSession.enemiesDestroyed}"
+        bodyFont.draw(batch, enText,
+            btnCenterX - GlyphLayout(bodyFont, enText).width / 2f, 4.2f)
 
         // Astronauts rescued
-        font.draw(
-            batch,
-            "${i18n.get("astronauts_rescued")}: ${GameSession.astronautsRescued}",
-            btnCenterX - 3f,
-            3.4f
-        )
+        val resText = "${i18n.get("astronauts_rescued")}: ${GameSession.astronautsRescued}"
+        bodyFont.draw(batch, resText,
+            btnCenterX - GlyphLayout(bodyFont, resText).width / 2f, 3.6f)
 
-        // Astronauts killed
-        font.draw(
-            batch,
-            "${i18n.get("astronauts_killed")}: ${GameSession.astronautsKilled}",
-            btnCenterX - 3f,
-            2.8f
-        )
+        // Astronauts killed (only if > 0)
+        if (GameSession.astronautsKilled > 0) {
+            val killText = "${i18n.get("astronauts_killed")}: ${GameSession.astronautsKilled}"
+            bodyFont.draw(batch, killText,
+                btnCenterX - GlyphLayout(bodyFont, killText).width / 2f, 3.0f)
+        }
 
         // New record text
         if (isNewRecord) {
-            font.color = Color(0.8f, 0.6f, 0f, 1f)
-            font.data.setScale(0.9f)
-            font.draw(
-                batch,
-                i18n.get("new_record"),
-                Constants.WORLD_WIDTH / 2f - 2.5f,
-                6.6f
-            )
-            font.data.setScale(1f)
+            smallFont.color = Color(0.8f, 0.6f, 0f, 1f)
+            val nrLayout = GlyphLayout(smallFont, newRecordText)
+            smallFont.draw(batch, newRecordText,
+                Constants.WORLD_WIDTH / 2f - nrLayout.width / 2f, 6.8f)
         }
 
         // Name entry label + buttons
         if (showNameEntry) {
-            font.color = Color.YELLOW
-            font.data.setScale(0.8f)
-            val label = i18n.get("enter_name")
-            font.draw(
-                batch,
-                label,
-                Constants.WORLD_WIDTH / 2f - label.length * 0.2f,
-                5f
-            )
+            smallFont.color = Color.YELLOW
+            val enLayout = GlyphLayout(smallFont, enterNameText)
+            smallFont.draw(batch, enterNameText,
+                Constants.WORLD_WIDTH / 2f - enLayout.width / 2f, 5.2f)
+
             predefinedNames.forEachIndexed { index, name ->
                 val bounds = nameButtonBounds[index]
-                font.color = Color.WHITE
-                font.draw(
-                    batch,
-                    name,
-                    bounds.x + bounds.width / 2f - name.length * 0.2f,
-                    bounds.y + bounds.height / 2f + 0.25f
-                )
+                bodyFont.color = Color.WHITE
+                val nameLayout = GlyphLayout(bodyFont, name)
+                bodyFont.draw(batch, name,
+                    bounds.x + (bounds.width - nameLayout.width) / 2f,
+                    bounds.y + bounds.height / 2f + nameLayout.height / 2f)
             }
-            font.data.setScale(1f)
         }
-
-        font.data.setScale(0.8f)
-        font.color = Color.WHITE
 
         // Button labels
         drawButtonLabel(batch, retryButton)
@@ -336,12 +315,13 @@ class GameOverScreen(
 
         batch.end()
 
-        // Leaderboard button
-        UiComponents.drawButton(shapeRenderer, batch, font, leaderboardButtonBounds, game.i18n.get("leaderboard"))
+        // Leaderboard button (small, bottom)
+        UiComponents.drawButton(shapeRenderer, batch, smallFont, leaderboardButtonBounds, game.i18n.get("leaderboard"))
 
-        // Reset font scale for next frame
-        font.data.setScale(1f)
-        font.color = Color.WHITE
+        // Reset font colours
+        headingFont.color = Color.WHITE
+        bodyFont.color = Color.WHITE
+        smallFont.color = Color.WHITE
     }
 
     // ── Drawing helpers ───────────────────────────────────────
@@ -359,12 +339,11 @@ class GameOverScreen(
 
     private fun drawButtonLabel(sb: SpriteBatch, btn: ButtonDef) {
         val label = i18n.get(btn.labelKey)
-        font.draw(
-            sb,
-            label,
-            btn.bounds.x + btn.bounds.width / 2f - label.length * 0.2f,
-            btn.bounds.y + btn.bounds.height / 2f + 0.3f
-        )
+        val layout = GlyphLayout(bodyFont, label)
+        bodyFont.color = Color.WHITE
+        bodyFont.draw(sb, label,
+            btn.bounds.x + (btn.bounds.width - layout.width) / 2f,
+            btn.bounds.y + btn.bounds.height / 2f + layout.height / 2f)
     }
 
     // ── Cleanup ───────────────────────────────────────────────
@@ -372,30 +351,6 @@ class GameOverScreen(
     override fun dispose() {
         batch.dispose()
         shapeRenderer.dispose()
-        font.dispose()
-    }
-}
-
-/**
- * Session-scoped holder for final-score data passed between
- * [GameScreen] and [GameOverScreen].
- */
-object GameSession {
-    var finalScore: Int = 0
-    var finalTime: Float = 0f
-    var finalTimeFormatted: String = "0:00"
-    var asteroidsDestroyed: Int = 0
-    var enemiesDestroyed: Int = 0
-    var astronautsRescued: Int = 0
-    var astronautsKilled: Int = 0
-
-    fun reset() {
-        finalScore = 0
-        finalTime = 0f
-        finalTimeFormatted = "0:00"
-        asteroidsDestroyed = 0
-        enemiesDestroyed = 0
-        astronautsRescued = 0
-        astronautsKilled = 0
+        // FontManager handles font disposal globally
     }
 }

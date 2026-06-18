@@ -15,6 +15,9 @@ gdx-backend-headless = { module = "com.badlogicgames.gdx:gdx-backend-headless", 
 # libGDX Android
 gdx-backend-android = { module = "com.badlogicgames.gdx:gdx-backend-android", version.ref = "gdx" }
 
+# libGDX FreeType
+gdx-freetype = { module = "com.badlogicgames.gdx:gdx-freetype", version.ref = "gdx" }
+
 # KTX
 ktx-app = { module = "io.github.libktx:ktx-app", version.ref = "ktx" }
 ktx-graphics = { module = "io.github.libktx:ktx-graphics", version.ref = "ktx" }

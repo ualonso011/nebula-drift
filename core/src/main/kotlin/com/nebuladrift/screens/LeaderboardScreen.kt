@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
@@ -13,6 +12,7 @@ import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.managers.LeaderboardManager
+import com.nebuladrift.rendering.FontManager
 import com.nebuladrift.rendering.UiComponents
 import com.nebuladrift.util.Constants
 import com.nebuladrift.NebulaDriftGame
@@ -20,10 +20,10 @@ import ktx.app.KtxScreen
 
 /**
  * Displays the top-10 leaderboard with gold/silver/bronze highlights
- * for ranks 1–3 and a Back button that returns to [MenuScreen].
+ * for ranks 1-3 and a Back button that returns to [MenuScreen].
  *
- * Delegates to [LeaderboardManager] for data and [UiComponents] for
- * shared rendering helpers.
+ * Uses [FontManager] for smooth typography and [GlyphLayout] for
+ * exact centering.
  *
  * @property game The game instance for screen transitions
  * @property i18n The i18n manager for translated strings
@@ -36,8 +36,12 @@ class LeaderboardScreen(
     // ── Rendering ─────────────────────────────────────────────
     private val shapeRenderer = ShapeRenderer()
     private val spriteBatch = SpriteBatch()
-    private val font = BitmapFont()
     private val viewport = FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, OrthographicCamera())
+
+    // ── Fonts ─────────────────────────────────────────────────
+    private val headingFont get() = FontManager.heading()
+    private val bodyFont get() = FontManager.body()
+    private val smallFont get() = FontManager.small()
 
     // ── Back button ───────────────────────────────────────────
     private val backButtonBounds = Rectangle(
@@ -51,6 +55,9 @@ class LeaderboardScreen(
     private val goldColor = Color(0.8f, 0.6f, 0f, 1f)
     private val silverColor = Color(0.7f, 0.7f, 0.7f, 1f)
     private val bronzeColor = Color.valueOf("CD7F32")
+
+    // ── Cached title layout ───────────────────────────────────
+    private val titleText: String get() = i18n.get("leaderboard")
 
     // ── Lifecycle ─────────────────────────────────────────────
 
@@ -69,36 +76,40 @@ class LeaderboardScreen(
         val vw = viewport.worldWidth
         val vh = viewport.worldHeight
 
-        // ── Set projection matrices ────────────────────────────
+        // Set projection matrices
         shapeRenderer.projectionMatrix = viewport.camera.combined
         spriteBatch.projectionMatrix = viewport.camera.combined
 
+        // ── Background ─────────────────────────────────────────
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        shapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
+        shapeRenderer.rect(0f, 0f, vw, vh)
+        shapeRenderer.end()
+
         // ── Title ──────────────────────────────────────────────
         spriteBatch.begin()
-        font.data.setScale(1.2f)
-        font.color = Color.WHITE
-        val title = i18n.get("leaderboard")
-        val titleLayout = GlyphLayout(font, title)
-        font.draw(spriteBatch, title, (vw - titleLayout.width) / 2f, vh - 1f)
+        headingFont.color = Color.WHITE
+        val titleLayout = GlyphLayout(headingFont, titleText)
+        headingFont.draw(spriteBatch, titleText,
+            (vw - titleLayout.width) / 2f, vh - 0.8f)
         spriteBatch.end()
 
         // ── Entries or empty state ─────────────────────────────
         if (entries.isEmpty()) {
             spriteBatch.begin()
-            font.data.setScale(0.9f)
-            font.color = Color.LIGHT_GRAY
+            bodyFont.color = Color.LIGHT_GRAY
             val noScores = i18n.get("no_scores")
-            val noScoresLayout = GlyphLayout(font, noScores)
-            font.draw(spriteBatch, noScores, (vw - noScoresLayout.width) / 2f, vh / 2f)
+            val noScoresLayout = GlyphLayout(bodyFont, noScores)
+            bodyFont.draw(spriteBatch, noScores,
+                (vw - noScoresLayout.width) / 2f, vh / 2f)
             spriteBatch.end()
         } else {
             spriteBatch.begin()
-            font.data.setScale(0.7f)
             entries.forEachIndexed { index, entry ->
-                val y = vh - 2f - index * 0.6f
+                val y = vh - 2.2f - index * 0.7f
 
                 // Rank colour
-                font.color = when (index) {
+                bodyFont.color = when (index) {
                     0 -> goldColor
                     1 -> silverColor
                     2 -> bronzeColor
@@ -106,16 +117,17 @@ class LeaderboardScreen(
                 }
 
                 val timeStr = formatTime(entry.time)
-                val text = "${index + 1}. ${entry.name} — ${entry.score} — $timeStr"
-                val textLayout = GlyphLayout(font, text)
-                font.draw(spriteBatch, text, (vw - textLayout.width) / 2f, y)
+                val text = "#${index + 1}  ${entry.name}  —  ${entry.score} pts  —  $timeStr"
+                val textLayout = GlyphLayout(bodyFont, text)
+                bodyFont.draw(spriteBatch, text,
+                    (vw - textLayout.width) / 2f, y)
             }
             spriteBatch.end()
         }
 
         // ── Back button ────────────────────────────────────────
         UiComponents.drawButton(
-            shapeRenderer, spriteBatch, font,
+            shapeRenderer, spriteBatch, bodyFont,
             backButtonBounds,
             i18n.get("back")
         )
@@ -128,6 +140,9 @@ class LeaderboardScreen(
                 game.startTransition { game.setScreen<MenuScreen>() }
             }
         }
+
+        // Reset font colour
+        bodyFont.color = Color.WHITE
     }
 
     override fun resize(width: Int, height: Int) {
@@ -137,7 +152,7 @@ class LeaderboardScreen(
     override fun dispose() {
         shapeRenderer.dispose()
         spriteBatch.dispose()
-        font.dispose()
+        // FontManager handles font disposal globally
     }
 
     // ── Helpers ───────────────────────────────────────────────

@@ -44,11 +44,16 @@ val natives: Configuration by configurations.creating
 dependencies {
     implementation(project(":core"))
     implementation(libs.gdx.backend.android)
-    
+    implementation(libs.gdx.freetype)
+
     // Native libraries for libGDX
     natives("com.badlogicgames.gdx:gdx-platform:1.12.1:natives-arm64-v8a")
     natives("com.badlogicgames.gdx:gdx-platform:1.12.1:natives-armeabi-v7a")
     natives("com.badlogicgames.gdx:gdx-platform:1.12.1:natives-x86_64")
+    // FreeType native libraries
+    natives("com.badlogicgames.gdx:gdx-freetype-platform:1.12.1:natives-arm64-v8a")
+    natives("com.badlogicgames.gdx:gdx-freetype-platform:1.12.1:natives-armeabi-v7a")
+    natives("com.badlogicgames.gdx:gdx-freetype-platform:1.12.1:natives-x86_64")
 }
 
 // Task to extract native libraries from JARs

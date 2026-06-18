@@ -7,6 +7,9 @@ dependencies {
     // libGDX
     api(libs.gdx)
 
+    // FreeType for smooth fonts
+    api(libs.gdx.freetype)
+
     // KTX
     api(libs.ktx.app)
     api(libs.ktx.graphics)
@@ -21,6 +24,7 @@ dependencies {
     // libGDX test infrastructure (Pixmap requires native libraries)
     testImplementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:${libs.versions.gdx.get()}")
     testRuntimeOnly("com.badlogicgames.gdx:gdx-platform:${libs.versions.gdx.get()}:natives-desktop")
+    testRuntimeOnly("com.badlogicgames.gdx:gdx-freetype-platform:${libs.versions.gdx.get()}:natives-desktop")
 
     // Headless backend for AudioManager tests (no GL context required)
     testImplementation(libs.gdx.backend.headless)

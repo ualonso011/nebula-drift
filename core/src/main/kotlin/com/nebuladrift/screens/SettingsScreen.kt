@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
@@ -12,6 +11,7 @@ import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.nebuladrift.managers.AudioManager
+import com.nebuladrift.rendering.FontManager
 import com.nebuladrift.rendering.UiComponents
 import com.nebuladrift.util.Constants
 import com.nebuladrift.NebulaDriftGame
@@ -20,16 +20,8 @@ import ktx.app.KtxScreen
 /**
  * Settings screen with volume sliders, language toggle, and version info.
  *
- * Displays:
- * - Music volume slider (world-coordinate drag)
- * - SFX volume slider (world-coordinate drag)
- * - Language toggle button (cycles eu → es → en → eu)
- * - Game version at bottom
- * - Back button to [MenuScreen]
- *
- * All rendering uses [ShapeRenderer] + [SpriteBatch] + [BitmapFont]
- * in world coordinates via a [FitViewport], matching the existing
- * screen pattern.
+ * Uses [FontManager] for smooth typography and [GlyphLayout] for
+ * exact centering of all labels.
  *
  * @property game The game instance for screen transitions and i18n
  */
@@ -40,8 +32,12 @@ class SettingsScreen(
     // ── Rendering ─────────────────────────────────────────────
     private val shapeRenderer = ShapeRenderer()
     private val spriteBatch = SpriteBatch()
-    private val font = BitmapFont()
     private val viewport = FitViewport(Constants.WORLD_WIDTH, Constants.WORLD_HEIGHT, OrthographicCamera())
+
+    // ── Fonts ─────────────────────────────────────────────────
+    private val headingFont get() = FontManager.heading()
+    private val bodyFont get() = FontManager.body()
+    private val smallFont get() = FontManager.small()
 
     // ── UI bounds (world units) ───────────────────────────────
     private val musicSliderBounds = Rectangle()
@@ -57,15 +53,17 @@ class SettingsScreen(
 
     override fun show() {
         val vw = viewport.worldWidth
+        val totalSlidersHeight = 2.5f // sliders take ~2.5 units
+        val startY = viewport.worldHeight - 2.5f
 
-        // Music slider: centered, y = 6
-        musicSliderBounds.set(vw / 2 - 3f, 6f, 6f, 0.3f)
+        // Music slider: centered
+        musicSliderBounds.set(vw / 2 - 3f, startY, 6f, 0.4f)
 
-        // SFX slider: centered, y = 4.5
-        sfxSliderBounds.set(vw / 2 - 3f, 4.5f, 6f, 0.3f)
+        // SFX slider: centered, below music
+        sfxSliderBounds.set(vw / 2 - 3f, startY - 1.8f, 6f, 0.4f)
 
-        // Language button: centered, y = 3
-        languageButtonBounds.set(vw / 2 - 2f, 3f, 4f, 0.8f)
+        // Language button: centered below sliders
+        languageButtonBounds.set(vw / 2 - 2.5f, startY - 3.5f, 5f, 0.9f)
 
         // Back button: bottom center
         backButtonBounds.set(vw / 2 - 1.5f, 0.5f, 3f, 0.8f)
@@ -78,25 +76,29 @@ class SettingsScreen(
         viewport.apply()
         viewport.camera.update()
 
-        // Set projection matrices before any rendering
+        // Set projection matrices
         shapeRenderer.projectionMatrix = viewport.camera.combined
         spriteBatch.projectionMatrix = viewport.camera.combined
 
+        // ── Background ─────────────────────────────────────────
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        shapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
+        shapeRenderer.rect(0f, 0f, viewport.worldWidth, viewport.worldHeight)
+        shapeRenderer.end()
+
         // ── Title ──────────────────────────────────────────────
         spriteBatch.begin()
-        font.color = Color.WHITE
+        headingFont.color = Color.WHITE
         val title = game.i18n.get("settings")
-        val titleLayout = GlyphLayout(font, title)
-        font.draw(
-            spriteBatch, title,
+        val titleLayout = GlyphLayout(headingFont, title)
+        headingFont.draw(spriteBatch, title,
             (viewport.worldWidth - titleLayout.width) / 2f,
-            viewport.worldHeight - 1f
-        )
+            viewport.worldHeight - 0.8f)
         spriteBatch.end()
 
         // ── Music slider ───────────────────────────────────────
         UiComponents.drawSlider(
-            shapeRenderer, spriteBatch, font,
+            shapeRenderer, spriteBatch, bodyFont,
             musicSliderBounds,
             AudioManager.musicVolume,
             game.i18n.get("music_volume")
@@ -104,7 +106,7 @@ class SettingsScreen(
 
         // ── SFX slider ─────────────────────────────────────────
         UiComponents.drawSlider(
-            shapeRenderer, spriteBatch, font,
+            shapeRenderer, spriteBatch, bodyFont,
             sfxSliderBounds,
             AudioManager.sfxVolume,
             game.i18n.get("sfx_volume")
@@ -118,43 +120,38 @@ class SettingsScreen(
             else -> "Euskera"
         }
         UiComponents.drawButton(
-            shapeRenderer, spriteBatch, font,
+            shapeRenderer, spriteBatch, bodyFont,
             languageButtonBounds,
             "${game.i18n.get("language")}: $currentLang"
         )
 
         // ── Version ────────────────────────────────────────────
         spriteBatch.begin()
-        font.color = Color.GRAY
+        smallFont.color = Color.GRAY
         val versionText = "v${Constants.GAME_VERSION}"
-        val versionLayout = GlyphLayout(font, versionText)
-        font.draw(
-            spriteBatch, versionText,
+        val versionLayout = GlyphLayout(smallFont, versionText)
+        smallFont.draw(spriteBatch, versionText,
             (viewport.worldWidth - versionLayout.width) / 2f,
-            1.5f
-        )
+            1.8f)
         spriteBatch.end()
 
         // ── Back button ────────────────────────────────────────
         UiComponents.drawButton(
-            shapeRenderer, spriteBatch, font,
+            shapeRenderer, spriteBatch, bodyFont,
             backButtonBounds,
             game.i18n.get("back")
         )
 
         // ── Input handling ─────────────────────────────────────
         handleInput()
+
+        // Reset font colours
+        bodyFont.color = Color.WHITE
+        headingFont.color = Color.WHITE
     }
 
     // ── Input ──────────────────────────────────────────────────
 
-    /**
-     * Process touch input for sliders and buttons.
-     *
-     * - Drag on music/SFX sliders updates volume in real time
-     * - Tap on language button cycles the locale
-     * - Tap on back button transitions to [MenuScreen]
-     */
     private fun handleInput() {
         // ── Slider drag (continuous touch) ─────────────────
         if (Gdx.input.isTouched) {
@@ -217,11 +214,6 @@ class SettingsScreen(
 
     // ── Language toggle ────────────────────────────────────────
 
-    /**
-     * Cycle the game locale: eu → es → en → eu.
-     * After switching, transition to [MenuScreen] so that all
-     * translatable strings are re-read from the new bundle.
-     */
     private fun cycleLanguage() {
         val newLocale = when (game.i18n.getLocale()) {
             "eu" -> "es"
@@ -244,6 +236,6 @@ class SettingsScreen(
     override fun dispose() {
         shapeRenderer.dispose()
         spriteBatch.dispose()
-        font.dispose()
+        // FontManager handles font disposal globally
     }
 }

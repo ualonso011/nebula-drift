@@ -8,6 +8,7 @@ dependencies {
 
     implementation(libs.gdx.backend.lwjgl3)
     runtimeOnly("com.badlogicgames.gdx:gdx-platform:${libs.versions.gdx.get()}:natives-desktop")
+    runtimeOnly("com.badlogicgames.gdx:gdx-freetype-platform:${libs.versions.gdx.get()}:natives-desktop")
 }
 
 java {
