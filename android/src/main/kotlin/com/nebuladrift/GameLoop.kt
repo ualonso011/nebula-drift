@@ -37,7 +37,7 @@ class GameLoop : NebulaDriftGame() {
 
         addScreen(
             GameScreen(
-                game = this,
+                game = this as NebulaDriftGame,
                 i18n = i18n,
                 atlas = atlas,
                 onGameOver = {

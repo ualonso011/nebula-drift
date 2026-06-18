@@ -237,8 +237,9 @@ fun GameOverScreen(
 private fun parseSeconds(formatted: String): Float {
     val parts = formatted.split(":")
     if (parts.size == 2) {
-        return parts[0].toFloatOrNull()?.let { it * 60 } ?: 0f +
-                parts[1].toFloatOrNull() ?: 0f
+        val minutes = parts[0].toFloatOrNull()?.let { it * 60f } ?: 0f
+        val seconds = parts[1].toFloatOrNull() ?: 0f
+        return minutes + seconds
     }
     return 0f
 }
