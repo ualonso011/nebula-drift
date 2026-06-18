@@ -84,7 +84,8 @@ class EnemySpawnSystem : GameSystem {
             EnemyType.DARK_CLONE -> LaserOwner.DARK_CLONE
         }
 
-        val direction = Vector2(targetPos).sub(enemy.position).nor()
+        // Shoot straight left (toward the player's side)
+        val direction = Vector2(-1f, 0f)
         val (laserSpeed, laserRadius) = when (enemy.getType()) {
             EnemyType.LIGHT_FIGHTER -> Constants.ENEMY_LIGHT_LASER_SPEED to Constants.ENEMY_LIGHT_LASER_RADIUS
             EnemyType.MEDIUM_FRIGATE -> Constants.ENEMY_MEDIUM_LASER_SPEED to Constants.ENEMY_MEDIUM_LASER_RADIUS
