@@ -48,6 +48,8 @@ class CollisionSystem : GameSystem {
         val newAsteroids = mutableListOf<Asteroid>()
 
         for (laser in context.lasers) {
+            // Skip enemy lasers — handled by checkEnemyLaserAsteroidCollisions
+            if (laser.owner != LaserOwner.PLAYER) continue
             if (lasersToRemove.contains(laser)) continue
 
             for (asteroid in context.asteroids) {

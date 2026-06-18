@@ -61,7 +61,7 @@ object FontManager {
             bodyFont = generateFont(generator, params, 28)
             smallFont = generateFont(generator, params, 18)
             hudFont = generateFont(generator, params, 26)
-            hudScoreFont = generateFont(generator, params, 38) // ~1.46x larger
+            hudScoreFont = generateFont(generator, params, 52) // ~2.0x larger
 
             generator.dispose()
             isInitialized = true

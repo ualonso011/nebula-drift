@@ -382,24 +382,27 @@ object SpriteGenerator {
         val cy = s / 2f
         val h = s * 0.35f
 
-        // Engine glow (red)
-        pix.setColor(1f, 0.2f, 0.2f, 0.3f)
-        pix.fillCircle((cx + h * 0.8f).roundToInt(), cy.roundToInt(), (h * 0.3f).roundToInt())
+        // Engine exhaust glow (layered for realistic thruster look)
+        pix.setColor(1f, 0.3f, 0.1f, 0.25f)
+        pix.fillCircle((cx + h * 0.85f).roundToInt(), cy.roundToInt(), (h * 0.5f).roundToInt())
+        pix.setColor(1f, 0.5f, 0.2f, 0.35f)
+        pix.fillCircle((cx + h * 0.85f).roundToInt(), cy.roundToInt(), (h * 0.35f).roundToInt())
+        pix.setColor(1f, 0.7f, 0.3f, 0.5f)
+        pix.fillCircle((cx + h * 0.85f).roundToInt(), cy.roundToInt(), (h * 0.2f).roundToInt())
 
-        // Main body (aggressive angular shape)
+        // Main fuselage (aggressive angular shape)
         pix.setColor(0.8f, 0.15f, 0.15f, 1f)
-        // Fuselage
         pix.fillRectangle((cx - h * 0.5f).roundToInt(), (cy - h * 0.2f).roundToInt(),
                          (h * 1.2f).roundToInt(), (h * 0.4f).roundToInt())
-        
-        // Nose (pointed left - enemy direction)
+
+        // Pointed nose cone (more aggressive angle)
         fillTriangle(pix,
-            (cx - h * 1.1f).roundToInt(), cy.roundToInt(),         // nose tip
+            (cx - h * 1.15f).roundToInt(), cy.roundToInt(),         // nose tip
             (cx - h * 0.5f).roundToInt(), (cy - h * 0.2f).roundToInt(),
             (cx - h * 0.5f).roundToInt(), (cy + h * 0.2f).roundToInt()
         )
-        
-        // Aggressive wings (sharp angles)
+
+        // Aggressive swept-back wings (sharp angles)
         pix.setColor(0.7f, 0.1f, 0.1f, 1f)
         // Top wing
         fillTriangle(pix,
@@ -413,15 +416,49 @@ object SpriteGenerator {
             (cx + h * 0.4f).roundToInt(), (cy + h * 0.2f).roundToInt(),
             (cx + h * 0.6f).roundToInt(), (cy + h * 0.8f).roundToInt()
         )
-        
-        // Cockpit (menacing red/orange)
+
+        // Wing struts (structural detail lines)
+        pix.setColor(0.5f, 0.08f, 0.08f, 0.6f)
+        pix.drawLine((cx - h * 0.1f).roundToInt(), (cy - h * 0.2f).roundToInt(),
+                     (cx + h * 0.5f).roundToInt(), (cy - h * 0.6f).roundToInt())
+        pix.drawLine((cx - h * 0.1f).roundToInt(), (cy + h * 0.2f).roundToInt(),
+                     (cx + h * 0.5f).roundToInt(), (cy + h * 0.6f).roundToInt())
+
+        // Wingtip markers (navigation lights)
+        pix.setColor(0.3f, 0.02f, 0.02f, 1f)
+        pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy - h * 0.8f).roundToInt(), 2)
+        pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy + h * 0.8f).roundToInt(), 2)
+
+        // Cockpit (menacing red/orange with glare)
         pix.setColor(1f, 0.4f, 0.1f, 0.9f)
         pix.fillCircle((cx - h * 0.3f).roundToInt(), cy.roundToInt(), (h * 0.15f).roundToInt())
-        
-        // Weapon pods on wings
+        pix.setColor(1f, 0.7f, 0.4f, 0.5f)
+        pix.fillCircle((cx - h * 0.25f).roundToInt(), (cy - h * 0.03f).roundToInt(), (h * 0.07f).roundToInt())
+
+        // Engine nozzles (dark recess with inner glow)
+        pix.setColor(0.2f, 0.05f, 0.05f, 1f)
+        pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy - h * 0.12f).roundToInt(), (h * 0.1f).roundToInt())
+        pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy + h * 0.12f).roundToInt(), (h * 0.1f).roundToInt())
+        // Nozzle inner glow (hot exhaust inside)
+        pix.setColor(1f, 0.5f, 0.1f, 0.7f)
+        pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy - h * 0.12f).roundToInt(), (h * 0.05f).roundToInt())
+        pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy + h * 0.12f).roundToInt(), (h * 0.05f).roundToInt())
+
+        // Weapon pods on wing struts
         pix.setColor(0.5f, 0.1f, 0.1f, 1f)
-        pix.fillCircle((cx + h * 0.3f).roundToInt(), (cy - h * 0.5f).roundToInt(), (h * 0.1f).roundToInt())
-        pix.fillCircle((cx + h * 0.3f).roundToInt(), (cy + h * 0.5f).roundToInt(), (h * 0.1f).roundToInt())
+        pix.fillCircle((cx + h * 0.25f).roundToInt(), (cy - h * 0.5f).roundToInt(), (h * 0.12f).roundToInt())
+        pix.fillCircle((cx + h * 0.25f).roundToInt(), (cy + h * 0.5f).roundToInt(), (h * 0.12f).roundToInt())
+        // Pod highlights
+        pix.setColor(0.65f, 0.15f, 0.15f, 0.7f)
+        pix.fillCircle((cx + h * 0.25f).roundToInt(), (cy - h * 0.52f).roundToInt(), (h * 0.06f).roundToInt())
+        pix.fillCircle((cx + h * 0.25f).roundToInt(), (cy + h * 0.52f).roundToInt(), (h * 0.06f).roundToInt())
+
+        // Panel lines along fuselage
+        pix.setColor(0.3f, 0.05f, 0.05f, 0.5f)
+        pix.drawLine((cx - h * 0.3f).roundToInt(), (cy - h * 0.2f).roundToInt(),
+                     (cx - h * 0.3f).roundToInt(), (cy + h * 0.2f).roundToInt())
+        pix.drawLine((cx + h * 0.1f).roundToInt(), (cy - h * 0.2f).roundToInt(),
+                     (cx + h * 0.1f).roundToInt(), (cy + h * 0.2f).roundToInt())
 
         return pix
     }
@@ -439,57 +476,100 @@ object SpriteGenerator {
         val halfW = s * 0.4f
         val halfH = s * 0.25f
 
-        // Engine glow (orange)
-        pix.setColor(1f, 0.5f, 0.1f, 0.3f)
-        pix.fillCircle((cx + halfW * 0.9f).roundToInt(), cy.roundToInt(), (halfH * 0.6f).roundToInt())
+        // Engine exhaust glow (layered orange)
+        pix.setColor(1f, 0.4f, 0.1f, 0.2f)
+        pix.fillCircle((cx + halfW * 0.95f).roundToInt(), cy.roundToInt(), (halfH * 0.8f).roundToInt())
+        pix.setColor(1f, 0.6f, 0.2f, 0.35f)
+        pix.fillCircle((cx + halfW * 0.9f).roundToInt(), cy.roundToInt(), (halfH * 0.5f).roundToInt())
+        pix.setColor(1f, 0.8f, 0.3f, 0.5f)
+        pix.fillCircle((cx + halfW * 0.9f).roundToInt(), cy.roundToInt(), (halfH * 0.3f).roundToInt())
 
         // Main body (larger, more imposing)
         val bodyColor = if (hp >= 2) Color(1f, 0.6f, 0.1f, 1f)
                         else Color(0.7f, 0.4f, 0.05f, 1f)  // darker when damaged
         pix.setColor(bodyColor)
-        
+
         // Central hull
         pix.fillRectangle((cx - halfW * 0.8f).roundToInt(), (cy - halfH * 0.6f).roundToInt(),
                          (halfW * 1.6f).roundToInt(), (halfH * 1.2f).roundToInt())
-        
-        // Front section (pointed)
+
+        // Front section (pointed nose cone)
         fillTriangle(pix,
-            (cx - halfW * 1.1f).roundToInt(), cy.roundToInt(),
+            (cx - halfW * 1.15f).roundToInt(), cy.roundToInt(),
             (cx - halfW * 0.8f).roundToInt(), (cy - halfH * 0.6f).roundToInt(),
             (cx - halfW * 0.8f).roundToInt(), (cy + halfH * 0.6f).roundToInt()
         )
-        
-        // Rear section
+
+        // Rear engine block
         pix.fillRectangle((cx + halfW * 0.4f).roundToInt(), (cy - halfH * 0.8f).roundToInt(),
                          (halfW * 0.6f).roundToInt(), (halfH * 1.6f).roundToInt())
-        
-        // Armor panels (darker sections)
+
+        // Engine nozzles (dark rectangles with inner glow)
+        pix.setColor(0.2f, 0.1f, 0.02f, 1f)
+        pix.fillRectangle((cx + halfW * 0.7f).roundToInt(), (cy - halfH * 0.5f).roundToInt(),
+                          (halfW * 0.2f).roundToInt(), (halfH * 0.3f).roundToInt())
+        pix.fillRectangle((cx + halfW * 0.7f).roundToInt(), (cy + halfH * 0.2f).roundToInt(),
+                          (halfW * 0.2f).roundToInt(), (halfH * 0.3f).roundToInt())
+        // Nozzle inner glow
+        pix.setColor(1f, 0.6f, 0.1f, 0.6f)
+        pix.fillRectangle((cx + halfW * 0.72f).roundToInt(), (cy - halfH * 0.45f).roundToInt(),
+                          (halfW * 0.14f).roundToInt(), (halfH * 0.2f).roundToInt())
+        pix.fillRectangle((cx + halfW * 0.72f).roundToInt(), (cy + halfH * 0.25f).roundToInt(),
+                          (halfW * 0.14f).roundToInt(), (halfH * 0.2f).roundToInt())
+
+        // Armor panels (darker sections with structural detail)
         pix.setColor(bodyColor.r * 0.7f, bodyColor.g * 0.7f, bodyColor.b * 0.7f, 1f)
         pix.fillRectangle((cx - halfW * 0.3f).roundToInt(), (cy - halfH * 0.4f).roundToInt(),
                          (halfW * 0.6f).roundToInt(), (halfH * 0.8f).roundToInt())
-        
-        // Weapon turrets
+
+        // Panel lines on armor
+        pix.setColor(bodyColor.r * 0.5f, bodyColor.g * 0.5f, bodyColor.b * 0.5f, 0.5f)
+        pix.drawLine((cx - halfW * 0.1f).roundToInt(), (cy - halfH * 0.4f).roundToInt(),
+                     (cx - halfW * 0.1f).roundToInt(), (cy + halfH * 0.4f).roundToInt())
+        pix.drawLine((cx + halfW * 0.1f).roundToInt(), (cy - halfH * 0.4f).roundToInt(),
+                     (cx + halfW * 0.1f).roundToInt(), (cy + halfH * 0.4f).roundToInt())
+
+        // Weapon turrets with barrels
+        val turretPositions = listOf(
+            (cx - halfW * 0.5f) to (cy - halfH * 0.9f),
+            (cx - halfW * 0.5f) to (cy + halfH * 0.9f),
+            (cx + halfW * 0.2f) to (cy - halfH * 0.9f),
+            (cx + halfW * 0.2f) to (cy + halfH * 0.9f)
+        )
         pix.setColor(0.4f, 0.2f, 0.05f, 1f)
-        pix.fillCircle((cx - halfW * 0.5f).roundToInt(), (cy - halfH * 0.9f).roundToInt(), (halfH * 0.2f).roundToInt())
-        pix.fillCircle((cx - halfW * 0.5f).roundToInt(), (cy + halfH * 0.9f).roundToInt(), (halfH * 0.2f).roundToInt())
-        pix.fillCircle((cx + halfW * 0.2f).roundToInt(), (cy - halfH * 0.9f).roundToInt(), (halfH * 0.2f).roundToInt())
-        pix.fillCircle((cx + halfW * 0.2f).roundToInt(), (cy + halfH * 0.9f).roundToInt(), (halfH * 0.2f).roundToInt())
-        
-        // Bridge/cockpit
+        for ((tx, ty) in turretPositions) {
+            pix.fillCircle(tx.roundToInt(), ty.roundToInt(), (halfH * 0.2f).roundToInt())
+            // Barrel pointing forward
+            pix.fillRectangle((tx - halfW * 0.1f).roundToInt(), (ty - 1).roundToInt(),
+                             (halfW * 0.15f).roundToInt(), 3)
+        }
+
+        // Bridge/cockpit with detail
         pix.setColor(1f, 0.8f, 0.3f, 0.9f)
         pix.fillCircle((cx - halfW * 0.6f).roundToInt(), cy.roundToInt(), (halfH * 0.25f).roundToInt())
+        pix.setColor(1f, 0.9f, 0.5f, 0.5f)
+        pix.fillCircle((cx - halfW * 0.55f).roundToInt(), (cy - halfH * 0.04f).roundToInt(), (halfH * 0.1f).roundToInt())
 
-        // Damage marks
+        // Damage marks (more severe when hp < 2)
         if (hp < 2) {
+            // Dark scorch / hull breach
+            pix.setColor(0.15f, 0.08f, 0.02f, 0.8f)
+            pix.fillCircle((cx - halfW * 0.3f).roundToInt(), (cy + halfH * 0.3f).roundToInt(), (halfH * 0.3f).roundToInt())
+
+            // Hull cracks
             pix.setColor(0.2f, 0.1f, 0.05f, 0.7f)
             pix.drawLine((cx - halfW * 0.4f).roundToInt(), (cy - halfH * 0.3f).roundToInt(),
                          (cx + halfW * 0.3f).roundToInt(), (cy + halfH * 0.4f).roundToInt())
             pix.drawLine((cx - halfW * 0.2f).roundToInt(), (cy + halfH * 0.5f).roundToInt(),
                          (cx + halfW * 0.4f).roundToInt(), (cy - halfH * 0.2f).roundToInt())
-            
-            // Fire/sparks
-            pix.setColor(1f, 0.4f, 0f, 0.6f)
+            pix.drawLine((cx + halfW * 0.1f).roundToInt(), (cy - halfH * 0.1f).roundToInt(),
+                         (cx + halfW * 0.3f).roundToInt(), (cy + halfH * 0.2f).roundToInt())
+
+            // Fire/sparks from damage
+            pix.setColor(1f, 0.4f, 0f, 0.7f)
             pix.fillCircle((cx + halfW * 0.1f).roundToInt(), (cy - halfH * 0.4f).roundToInt(), (halfH * 0.15f).roundToInt())
+            pix.setColor(1f, 0.8f, 0.2f, 0.5f)
+            pix.fillCircle((cx + halfW * 0.12f).roundToInt(), (cy - halfH * 0.38f).roundToInt(), (halfH * 0.08f).roundToInt())
         }
 
         return pix
@@ -507,9 +587,13 @@ object SpriteGenerator {
         val cy = s / 2f
         val r = s * 0.42f
 
-        // Engine glow (purple)
-        pix.setColor(0.6f, 0.2f, 0.8f, 0.3f)
-        pix.fillCircle((cx + r * 0.8f).roundToInt(), cy.roundToInt(), (r * 0.5f).roundToInt())
+        // Engine exhaust glow (layered purple)
+        pix.setColor(0.5f, 0.15f, 0.7f, 0.2f)
+        pix.fillCircle((cx + r * 0.85f).roundToInt(), cy.roundToInt(), (r * 0.65f).roundToInt())
+        pix.setColor(0.7f, 0.25f, 0.9f, 0.3f)
+        pix.fillCircle((cx + r * 0.85f).roundToInt(), cy.roundToInt(), (r * 0.45f).roundToInt())
+        pix.setColor(0.9f, 0.4f, 1f, 0.4f)
+        pix.fillCircle((cx + r * 0.85f).roundToInt(), cy.roundToInt(), (r * 0.25f).roundToInt())
 
         // Main body (massive hexagonal shape)
         val color = when {
@@ -518,7 +602,7 @@ object SpriteGenerator {
             else    -> Color(0.35f, 0.1f, 0.5f, 1f)
         }
         pix.setColor(color)
-        
+
         // Central hexagon (6 sides)
         val vertices = (0 until 6).map { i ->
             val angle = Math.toRadians((i * 60f + 30f).toDouble())
@@ -526,36 +610,65 @@ object SpriteGenerator {
             val vy = (cy + kotlin.math.sin(angle).toFloat() * r).roundToInt()
             vx to vy
         }
-        
+
         // Fill hexagon by drawing triangles from center
         for (i in vertices.indices) {
             val (x1, y1) = vertices[i]
             val (x2, y2) = vertices[(i + 1) % vertices.size]
             fillTriangle(pix, cx.roundToInt(), cy.roundToInt(), x1, y1, x2, y2)
         }
-        
-        // Armor plating (darker sections)
+
+        // Inner structural ring (darker)
+        pix.setColor(color.r * 0.5f, color.g * 0.5f, color.b * 0.5f, 1f)
+        val innerVertices = (0 until 6).map { i ->
+            val angle = Math.toRadians((i * 60f + 30f).toDouble())
+            val vx = (cx + kotlin.math.cos(angle).toFloat() * r * 0.7f).roundToInt()
+            val vy = (cy + kotlin.math.sin(angle).toFloat() * r * 0.7f).roundToInt()
+            vx to vy
+        }
+        for (i in innerVertices.indices) {
+            val (x1, y1) = innerVertices[i]
+            val (x2, y2) = innerVertices[(i + 1) % innerVertices.size]
+            fillTriangle(pix, cx.roundToInt(), cy.roundToInt(), x1, y1, x2, y2)
+        }
+
+        // Armor plating (darker center circle)
         pix.setColor(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f, 1f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (r * 0.5f).roundToInt())
-        
-        // Weapon batteries (multiple turrets)
+
+        // Structural spoke lines from center to hex edges
+        pix.setColor(color.r * 0.4f, color.g * 0.4f, color.b * 0.4f, 0.6f)
+        for (i in 0 until 6) {
+            val angle = Math.toRadians((i * 60f + 30f).toDouble())
+            val ex = (cx + kotlin.math.cos(angle).toFloat() * r * 0.95f).roundToInt()
+            val ey = (cy + kotlin.math.sin(angle).toFloat() * r * 0.95f).roundToInt()
+            pix.drawLine(cx.roundToInt(), cy.roundToInt(), ex, ey)
+        }
+
+        // Weapon batteries (6 turrets around the edge)
         pix.setColor(0.3f, 0.1f, 0.4f, 1f)
         for (i in 0 until 6) {
             val angle = Math.toRadians((i * 60f).toDouble())
             val wx = (cx + kotlin.math.cos(angle).toFloat() * r * 0.75f).roundToInt()
             val wy = (cy + kotlin.math.sin(angle).toFloat() * r * 0.75f).roundToInt()
             pix.fillCircle(wx, wy, (r * 0.15f).roundToInt())
+            // Turret barrel
+            val bx = (cx + kotlin.math.cos(angle).toFloat() * r * 0.95f).roundToInt()
+            val by = (cy + kotlin.math.sin(angle).toFloat() * r * 0.95f).roundToInt()
+            pix.drawLine(wx, wy, bx, by)
         }
-        
+
         // Central bridge/command center
         pix.setColor(0.8f, 0.4f, 1f, 0.9f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (r * 0.25f).roundToInt())
-        
+
         // Glowing core
         pix.setColor(1f, 0.6f, 1f, 0.7f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (r * 0.15f).roundToInt())
+        pix.setColor(1f, 0.8f, 1f, 0.4f)
+        pix.fillCircle((cx + r * 0.05f).roundToInt(), (cy - r * 0.05f).roundToInt(), (r * 0.07f).roundToInt())
 
-        // Damage marks
+        // Damage marks (hp <= 2)
         if (hp <= 2) {
             pix.setColor(0.15f, 0.05f, 0.2f, 0.7f)
             pix.drawLine(
@@ -566,18 +679,35 @@ object SpriteGenerator {
                 (cx + r * 0.3f).roundToInt(), (cy - r * 0.5f).roundToInt(),
                 (cx - r * 0.3f).roundToInt(), (cy + r * 0.5f).roundToInt()
             )
+            // Hull breach scorch
+            if (hp <= 1) {
+                pix.setColor(0.1f, 0.03f, 0.15f, 0.6f)
+                pix.fillCircle((cx + r * 0.2f).roundToInt(), (cy - r * 0.3f).roundToInt(), (r * 0.2f).roundToInt())
+            }
         }
         if (hp <= 1) {
             // Heavy damage - fire and exposed internals
             pix.setColor(1f, 0.3f, 0f, 0.6f)
             pix.fillCircle((cx - r * 0.3f).roundToInt(), (cy + r * 0.2f).roundToInt(), (r * 0.15f).roundToInt())
+            pix.setColor(1f, 0.6f, 0f, 0.5f)
+            pix.fillCircle((cx - r * 0.3f).roundToInt(), (cy + r * 0.22f).roundToInt(), (r * 0.08f).roundToInt())
+            pix.setColor(1f, 0.3f, 0f, 0.6f)
             pix.fillCircle((cx + r * 0.4f).roundToInt(), (cy - r * 0.3f).roundToInt(), (r * 0.12f).roundToInt())
-            
+
+            // Massive hull fracture line
             pix.setColor(0.2f, 0.1f, 0.3f, 0.8f)
             pix.drawLine(
                 (cx - r * 0.6f).roundToInt(), cy.roundToInt(),
                 (cx + r * 0.6f).roundToInt(), cy.roundToInt()
             )
+            pix.drawLine(
+                cx.roundToInt(), (cy - r * 0.6f).roundToInt(),
+                cx.roundToInt(), (cy + r * 0.6f).roundToInt()
+            )
+
+            // Exposed core leak
+            pix.setColor(1f, 0.4f, 0.6f, 0.5f)
+            pix.fillCircle((cx - r * 0.1f).roundToInt(), (cy - r * 0.1f).roundToInt(), (r * 0.08f).roundToInt())
         }
 
         return pix
@@ -595,26 +725,28 @@ object SpriteGenerator {
         val cy = s / 2f
         val h = s * 0.35f
 
-        // Dark energy aura (pulsing dark red/black)
-        pix.setColor(0.3f, 0.05f, 0.05f, 0.2f)
-        pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (h * 1.3f).roundToInt())
-        pix.setColor(0.4f, 0.08f, 0.08f, 0.3f)
-        pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (h * 1.1f).roundToInt())
+        // Dark energy aura (pulsing dark red/black, layered)
+        pix.setColor(0.3f, 0.05f, 0.05f, 0.15f)
+        pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (h * 1.4f).roundToInt())
+        pix.setColor(0.4f, 0.08f, 0.08f, 0.25f)
+        pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (h * 1.15f).roundToInt())
+        pix.setColor(0.5f, 0.1f, 0.1f, 0.35f)
+        pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (h * 0.9f).roundToInt())
 
         // Main body (corrupted version of player ship - dark red/black)
         pix.setColor(0.25f, 0.05f, 0.05f, 1f)
-        
+
         // Fuselage
-        pix.fillRectangle((cx - h * 0.6f).roundToInt(), (cy - h * 0.25f).roundToInt(), 
+        pix.fillRectangle((cx - h * 0.6f).roundToInt(), (cy - h * 0.25f).roundToInt(),
                          (h * 1.4f).roundToInt(), (h * 0.5f).roundToInt())
-        
-        // Nose cone (pointed right - clone direction)
+
+        // Nose cone (pointed left - clone direction)
         fillTriangle(pix,
-            (cx - h * 1.1f).roundToInt(), cy.roundToInt(),         // nose tip
+            (cx - h * 1.15f).roundToInt(), cy.roundToInt(),         // nose tip
             (cx - h * 0.5f).roundToInt(), (cy - h * 0.25f).roundToInt(),
             (cx - h * 0.5f).roundToInt(), (cy + h * 0.25f).roundToInt()
         )
-        
+
         // Wings (swept back, darker)
         pix.setColor(0.15f, 0.03f, 0.03f, 1f)
         // Top wing
@@ -629,28 +761,54 @@ object SpriteGenerator {
             (cx - h * 0.5f).roundToInt(), (cy + h * 0.25f).roundToInt(),
             (cx - h * 0.7f).roundToInt(), (cy + h * 0.9f).roundToInt()
         )
-        
-        // Cockpit (glowing red - menacing)
+
+        // Corrupted wing struts (dark energy traces)
+        pix.setColor(0.4f, 0.05f, 0.05f, 0.5f)
+        pix.drawLine((cx - h * 0.1f).roundToInt(), (cy - h * 0.25f).roundToInt(),
+                     (cx - h * 0.5f).roundToInt(), (cy - h * 0.7f).roundToInt())
+        pix.drawLine((cx - h * 0.1f).roundToInt(), (cy + h * 0.25f).roundToInt(),
+                     (cx - h * 0.5f).roundToInt(), (cy + h * 0.7f).roundToInt())
+
+        // Cockpit (glowing red, corrupted - menacing)
         pix.setColor(0.8f, 0.1f, 0.1f, 0.9f)
         pix.fillCircle((cx - h * 0.4f).roundToInt(), cy.roundToInt(), (h * 0.18f).roundToInt())
-        pix.setColor(1f, 0.3f, 0.3f, 0.6f)
+        pix.setColor(1f, 0.3f, 0.3f, 0.7f)
         pix.fillCircle((cx - h * 0.45f).roundToInt(), (cy - h * 0.05f).roundToInt(), (h * 0.08f).roundToInt())
-        
-        // Engine nozzles (glowing red)
-        pix.setColor(0.6f, 0.1f, 0.1f, 1f)
+
+        // Engine nozzles (dark with corrupted red glow)
+        pix.setColor(0.15f, 0.02f, 0.02f, 1f)
         pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy - h * 0.15f).roundToInt(), (h * 0.12f).roundToInt())
         pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy + h * 0.15f).roundToInt(), (h * 0.12f).roundToInt())
-        
-        // Engine glow
-        pix.setColor(1f, 0.2f, 0.2f, 0.4f)
-        pix.fillCircle((cx + h * 0.7f).roundToInt(), cy.roundToInt(), (h * 0.3f).roundToInt())
+        // Nozzle inner corrupted glow
+        pix.setColor(1f, 0.2f, 0.2f, 0.6f)
+        pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy - h * 0.15f).roundToInt(), (h * 0.06f).roundToInt())
+        pix.fillCircle((cx + h * 0.6f).roundToInt(), (cy + h * 0.15f).roundToInt(), (h * 0.06f).roundToInt())
 
-        // Dark energy cracks (glowing red lines)
+        // Corrupted engine exhaust glow (deeper red, wider)
+        pix.setColor(1f, 0.15f, 0.15f, 0.35f)
+        pix.fillCircle((cx + h * 0.8f).roundToInt(), cy.roundToInt(), (h * 0.4f).roundToInt())
+        pix.setColor(1f, 0.1f, 0.1f, 0.5f)
+        pix.fillCircle((cx + h * 0.8f).roundToInt(), cy.roundToInt(), (h * 0.25f).roundToInt())
+
+        // Dark energy cracks (glowing red lines, more extensive)
         pix.setColor(1f, 0.1f, 0.1f, 0.7f)
         pix.drawLine((cx - h * 0.3f).roundToInt(), (cy - h * 0.2f).roundToInt(),
                      (cx + h * 0.2f).roundToInt(), (cy + h * 0.15f).roundToInt())
         pix.drawLine((cx - h * 0.1f).roundToInt(), (cy + h * 0.25f).roundToInt(),
                      (cx + h * 0.3f).roundToInt(), (cy - h * 0.1f).roundToInt())
+
+        // Additional energy corruption lines
+        pix.setColor(0.8f, 0.05f, 0.1f, 0.5f)
+        pix.drawLine((cx - h * 0.5f).roundToInt(), (cy - h * 0.1f).roundToInt(),
+                     (cx + h * 0.1f).roundToInt(), (cy - h * 0.1f).roundToInt())
+        pix.drawLine((cx + h * 0.3f).roundToInt(), (cy - h * 0.25f).roundToInt(),
+                     (cx + h * 0.5f).roundToInt(), (cy + h * 0.2f).roundToInt())
+
+        // Dark energy pulsing nodes
+        pix.setColor(0.6f, 0.05f, 0.05f, 0.8f)
+        pix.fillCircle((cx - h * 0.1f).roundToInt(), (cy - h * 0.3f).roundToInt(), 3)
+        pix.fillCircle((cx + h * 0.2f).roundToInt(), (cy + h * 0.25f).roundToInt(), 3)
+        pix.fillCircle((cx - h * 0.2f).roundToInt(), cy.roundToInt(), 2)
 
         return pix
     }
@@ -839,14 +997,49 @@ object SpriteGenerator {
         val cy = s / 2f
         val r = s * 0.35f
 
-        // Golden circle
-        pix.setColor(1f, 0.85f, 0f, 1f)
+        // ── Broken gear body (gray/silver metal) ──
+        pix.setColor(0.45f, 0.45f, 0.5f, 1f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), r.roundToInt())
 
-        // Inner highlight
-        pix.setColor(1f, 0.95f, 0.5f, 0.6f)
-        pix.fillCircle((cx - r * 0.2f).roundToInt(), (cy + r * 0.2f).roundToInt(),
-                       (r * 0.35f).roundToInt())
+        // Gear teeth (broken stubs around the edge)
+        pix.setColor(0.4f, 0.4f, 0.45f, 1f)
+        val toothAngles = listOf(0f, 0.8f, 1.6f, 2.4f, 3.2f, 4.0f, 4.8f, 5.6f)
+        for (angle in toothAngles) {
+            val tx = (cx + kotlin.math.cos(angle.toDouble()).toFloat() * r * 0.9f).roundToInt()
+            val ty = (cy + kotlin.math.sin(angle.toDouble()).toFloat() * r * 0.9f).roundToInt()
+            pix.fillCircle(tx, ty, (r * 0.2f).roundToInt())
+        }
+
+        // Gear inner cutout (darker center hole)
+        pix.setColor(0.2f, 0.2f, 0.25f, 1f)
+        pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (r * 0.35f).roundToInt())
+
+        // ── Bent antenna / panel fragment crossing the gear ──
+        pix.setColor(0.6f, 0.6f, 0.55f, 0.9f)
+        pix.fillRectangle((cx - r * 0.8f).roundToInt(), (cy - r * 0.1f).roundToInt(),
+                          (r * 1.6f).roundToInt(), (r * 0.2f).roundToInt())
+        // Broken-off antenna tip
+        pix.setColor(0.5f, 0.5f, 0.45f, 0.8f)
+        fillTriangle(pix,
+            (cx + r * 0.8f).roundToInt(), (cy - r * 0.1f).roundToInt(),
+            (cx + r * 1.2f).roundToInt(), (cy - r * 0.3f).roundToInt(),
+            (cx + r * 0.8f).roundToInt(), (cy + r * 0.1f).roundToInt()
+        )
+
+        // ── Scorch marks (dark patches from explosions) ──
+        pix.setColor(0.1f, 0.08f, 0.05f, 0.7f)
+        pix.fillCircle((cx - r * 0.5f).roundToInt(), (cy + r * 0.3f).roundToInt(), (r * 0.25f).roundToInt())
+        pix.fillCircle((cx + r * 0.4f).roundToInt(), (cy - r * 0.4f).roundToInt(), (r * 0.2f).roundToInt())
+
+        // ── Corrosion spots (green/blue oxidation) ──
+        pix.setColor(0.2f, 0.45f, 0.3f, 0.5f)
+        pix.fillCircle((cx + r * 0.1f).roundToInt(), (cy - r * 0.3f).roundToInt(), (r * 0.12f).roundToInt())
+        pix.setColor(0.3f, 0.3f, 0.55f, 0.4f)
+        pix.fillCircle((cx - r * 0.3f).roundToInt(), (cy - r * 0.5f).roundToInt(), (r * 0.1f).roundToInt())
+
+        // ── Metal highlight (surface reflection) ──
+        pix.setColor(0.7f, 0.7f, 0.75f, 0.35f)
+        pix.fillCircle((cx + r * 0.15f).roundToInt(), (cy + r * 0.15f).roundToInt(), (r * 0.15f).roundToInt())
 
         return pix
     }
@@ -861,16 +1054,16 @@ object SpriteGenerator {
         val cy = s / 2f
         val outerR = s * 0.45f
 
-        // Radial glow (multiple concentric circles with decreasing alpha)
+        // Radial glow (warm white/blue instead of gold)
         for (i in 5 downTo 1) {
             val r = outerR * i / 5f
             val alpha = 0.3f * (1f - i.toFloat() / 6f)
-            pix.setColor(1f, 0.85f, 0f, alpha)
+            pix.setColor(0.6f, 0.7f, 1f, alpha)
             pix.drawCircle(cx.roundToInt(), cy.roundToInt(), r.roundToInt())
         }
 
-        // Center dot
-        pix.setColor(1f, 0.9f, 0.2f, 0.8f)
+        // Center dot (warm white)
+        pix.setColor(0.8f, 0.9f, 1f, 0.8f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (outerR * 0.15f).roundToInt())
 
         return pix

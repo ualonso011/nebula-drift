@@ -2,14 +2,17 @@ package com.nebuladrift
 
 import android.content.Intent
 import android.os.Bundle
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 
 /**
  * Game-only Activity — runs libGDX gameplay in fullscreen.
  *
- * When gameplay ends, the result is passed back to [MainActivity]
- * via a result Intent so the Compose UI can show the game-over screen.
+ * When gameplay ends, [Gdx.app.exit] is called to properly tear
+ * down the libGDX lifecycle. The result is passed back to
+ * [MainActivity] inside [onDestroy] so the Compose UI can show
+ * the game-over screen.
  */
 class GameActivity : AndroidApplication() {
 
@@ -27,9 +30,10 @@ class GameActivity : AndroidApplication() {
         val game = GameLoop().also { loop ->
             loop.onGameComplete = { result ->
                 gameResult = result
-                // `finish()` must run on the Android main thread.
-                // libGDX render loop runs on a separate GL thread.
-                runOnUiThread { finish() }
+                // Use Gdx.app.exit() for proper libGDX shutdown.
+                // Internally it posts finish() to the Android main
+                // thread and lets the render loop terminate cleanly.
+                Gdx.app.postRunnable { Gdx.app.exit() }
             }
         }
 
@@ -37,7 +41,8 @@ class GameActivity : AndroidApplication() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        // Set the result BEFORE super.onDestroy() disposes libGDX,
+        // so the intent is ready when the Activity result is delivered.
         gameResult?.let { result ->
             val intent = Intent().apply {
                 putExtra("score", result.score)
@@ -51,5 +56,6 @@ class GameActivity : AndroidApplication() {
         } ?: run {
             setResult(RESULT_CANCELED)
         }
+        super.onDestroy()
     }
 }
