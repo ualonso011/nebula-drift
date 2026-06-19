@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
-import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.nebuladrift.entities.Ship
@@ -20,26 +19,24 @@ import com.nebuladrift.managers.I18nManager
  * only (proven safe). No polygon, no triangle, no Unicode text hearts.
  * Wrapped in try-catch.
  *
- * ## Layout (top to bottom inside card)
+ * ## Layout (two-column: labels left, values right)
  *
- * Line 1: ♥♥♥ (hearts drawn with shapes)
- * Line 2: SCORE 1,234
- * Line 3: TIME 02:34
- * Line 4: ★ 5 (astronauts rescued)
+ * Line 1: ♥♥♥  (hearts drawn with shapes)
+ * Line 2: SCORE     1,234
+ * Line 3: TIME      02:34
+ * Line 4: ★         5  (astronauts rescued)
  */
 class HudRenderer {
 
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
     private val hudCamera = OrthographicCamera()
-    private val layout = GlyphLayout()
 
     private val margin = 12f
-    private val cardPadding = 14f
-    private val lineHeight = 30f
-    private val heartSpacing = 32f
+    private val cardPadding = 16f
+    private val lineHeight = 32f
 
-    /** Space-themed font for score number and HUD values. */
+    /** Space-themed font for values (score number, time, etc.). */
     private val spaceFont: BitmapFont get() = FontManager.space()
 
     /** Roboto font for labels. */
@@ -70,11 +67,14 @@ class HudRenderer {
         val viewportWidth = hudCamera.viewportWidth
         val viewportHeight = hudCamera.viewportHeight
 
-        // Card dimensions — top-left
-        val cardW = 240f
-        val cardH = 140f
+        // Card dimensions — top-left, wider for two-column layout
+        val cardW = 280f
+        val cardH = 160f
         val cardX = margin
         val cardY = viewportHeight - margin - cardH
+
+        // Right column X — where values start
+        val rightColX = cardX + cardW * 0.52f
 
         // ════════════════════════════════════════════════════════
         // PHASE 1: ShapeRenderer — no SpriteBatch active
@@ -102,46 +102,41 @@ class HudRenderer {
         shapeRenderer.end()
 
         // ════════════════════════════════════════════════════════
-        // PHASE 2: SpriteBatch — no ShapeRenderer active
+        // PHASE 2: SpriteBatch — two-column layout
         // ════════════════════════════════════════════════════════
         batch.begin()
 
-        // Line 2: Score
+        // Line 2: SCORE (label left, value right)
         val scoreLabelY = heartsY - lineHeight
         hudFont.color = Color(0.5f, 0.7f, 1f, 0.9f)
-        hudFont.draw(batch, "SCORE ", cardX + cardPadding, scoreLabelY)
+        hudFont.draw(batch, "SCORE", cardX + cardPadding, scoreLabelY)
 
         spaceFont.color = Color.WHITE
         spaceFont.data.setScale(1.0f)
         val scoreText = "%,d".format(score)
-        layout.setText(hudFont, "SCORE ")
-        val labelW = layout.width
-        spaceFont.draw(batch, scoreText, cardX + cardPadding + labelW, scoreLabelY)
+        spaceFont.draw(batch, scoreText, rightColX, scoreLabelY)
         spaceFont.data.setScale(1f)
 
-        // Line 3: Timer
+        // Line 3: TIME (label left, value right)
         val timerY = scoreLabelY - lineHeight
         hudFont.color = Color(0.8f, 0.85f, 0.95f, 1f)
-        val timerLabel = "${i18n.get("time")}: "
-        hudFont.draw(batch, timerLabel, cardX + cardPadding, timerY)
+        hudFont.draw(batch, i18n.get("time"), cardX + cardPadding, timerY)
 
-        layout.setText(hudFont, timerLabel)
         spaceFont.color = Color.WHITE
         spaceFont.data.setScale(0.85f)
-        spaceFont.draw(batch, timeString, cardX + cardPadding + layout.width, timerY)
+        spaceFont.draw(batch, timeString, rightColX, timerY)
         spaceFont.data.setScale(1f)
 
-        // Line 4: Astronauts rescued
+        // Line 4: Astronauts rescued (label left, value right)
         if (astronautsRescued > 0) {
             val astroY = timerY - lineHeight
             hudFont.color = Color(0.3f, 0.9f, 0.3f, 1f)
-            hudFont.draw(batch, "\u2605 ", cardX + cardPadding, astroY)
+            hudFont.draw(batch, "\u2605 RESCUED", cardX + cardPadding, astroY)
 
-            layout.setText(hudFont, "\u2605 ")
-            val starW = layout.width
             spaceFont.color = Color(0.3f, 0.9f, 0.3f, 1f)
             spaceFont.data.setScale(1f)
-            spaceFont.draw(batch, astronautsRescued.toString(), cardX + cardPadding + starW, astroY)
+            spaceFont.draw(batch, astronautsRescued.toString(), rightColX, astroY)
+            spaceFont.data.setScale(1f)
         }
 
         batch.end()
@@ -157,8 +152,8 @@ class HudRenderer {
      * Zero polygon/triangle calls — safe on all Android GL backends.
      */
     private fun drawHeartsShape(x: Float, y: Float, lives: Int) {
-        val heartSize = 10f
-        val gap = heartSpacing
+        val heartSize = 14f
+        val gap = heartSize * 2.2f
 
         for (i in 0 until 3) {
             val hx = x + i * gap
