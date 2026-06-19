@@ -9,6 +9,7 @@ import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.rendering.FontManager
 import com.nebuladrift.rendering.SpriteGenerator
+import com.nebuladrift.screens.GameOverScreen
 import com.nebuladrift.screens.GameScreen
 import com.nebuladrift.screens.GameSession
 
@@ -17,16 +18,14 @@ import com.nebuladrift.screens.GameSession
  *
  * Extends [NebulaDriftGame] so that [GameScreen] can access the
  * inherited [transition] property. Overrides [create] to set up
- * only the gameplay screen — no menus (those are handled by Compose
- * in [MainActivity]).
- *
- * When the game ends, [onGameComplete] fires with the final stats
- * and the host Activity calls [finish] to return to Compose.
+ * only the gameplay screen — the Game Over screen is rendered
+ * inside libGDX (Scene2D) and only exits to Compose when the
+ * user clicks "Main Menu".
  */
 class GameLoop : NebulaDriftGame() {
 
-    /** Callback invoked when gameplay ends. */
-    var onGameComplete: ((GameResult) -> Unit)? = null
+    /** Called when the user clicks "Main Menu" in GameOverScreen. */
+    var onExitToMenu: (() -> Unit)? = null
 
     override fun create() {
         Gdx.app.log("GameLoop", "=== create() ===")
@@ -47,38 +46,23 @@ class GameLoop : NebulaDriftGame() {
 
         transitionBatch = SpriteBatch()
 
-        // Add GameScreen with onGameOver callback for Android
-        addScreen(
-            GameScreen(
-                game = this as NebulaDriftGame,
-                i18n = i18n,
-                atlas = atlas,
-                onGameOver = {
-                    onGameComplete?.invoke(buildResult())
-                },
-            ),
-        )
+        // Game screen (gameplay)
+        addScreen(GameScreen(
+            game = this,
+            i18n = i18n,
+            atlas = atlas,
+        ))
+
+        // Game Over screen (Scene2D with score, retry, main menu)
+        addScreen(GameOverScreen(
+            game = this,
+            i18n = i18n,
+            onExitToMenu = {
+                GameSession.reset()
+                onExitToMenu?.invoke()
+            },
+        ))
 
         setScreen<GameScreen>()
     }
-
-    private fun buildResult(): GameResult {
-        return GameResult(
-            score = GameSession.finalScore,
-            timeFormatted = GameSession.finalTimeFormatted,
-            asteroidsDestroyed = GameSession.asteroidsDestroyed,
-            enemiesDestroyed = GameSession.enemiesDestroyed,
-            astronautsRescued = GameSession.astronautsRescued,
-            astronautsKilled = GameSession.astronautsKilled,
-        )
-    }
-
-    data class GameResult(
-        val score: Int,
-        val timeFormatted: String,
-        val asteroidsDestroyed: Int,
-        val enemiesDestroyed: Int,
-        val astronautsRescued: Int,
-        val astronautsKilled: Int,
-    )
 }

@@ -51,18 +51,12 @@ class GameScreen(
     private val game: NebulaDriftGame,
     private val i18n: I18nManager,
     private val atlas: SpriteAtlas,
-    /**
-     * Optional callback for Android. When set, fired instead of
-     * transitioning to [GameOverScreen] — the host Activity is
-     * expected to handle the result itself.
-     */
-    private val onGameOver: (() -> Unit)? = null,
 ) : KtxScreen {
 
     // ── Rendering ─────────────────────────────────────────────
     private val cameraSetup = CameraSetup()
     private val batch = SpriteBatch()
-    private val hudRenderer = HudRenderer()
+    private val hudRenderer = HudRenderer(atlas)
 
     /** Entity renderer using the procedural sprite atlas. */
     private val gameRenderer = GameRenderer(batch, atlas, cameraSetup.camera)
@@ -273,13 +267,8 @@ class GameScreen(
         GameSession.astronautsRescued = scoreSystem.astronautsRescued
         GameSession.astronautsKilled = scoreSystem.astronautsKilled
 
-        if (onGameOver != null) {
-            // Android path: callback handles the result, no transition needed
-            onGameOver?.invoke()
-        } else {
-            // Desktop path: use transition to GameOverScreen
-            game.startTransition { game.setScreen<GameOverScreen>() }
-        }
+        // Transition to libGDX GameOverScreen — both Android and desktop
+        game.startTransition { game.setScreen<GameOverScreen>() }
     }
 
     // ── Helpers ───────────────────────────────────────────────

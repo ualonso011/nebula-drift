@@ -31,7 +31,13 @@ import ktx.app.KtxScreen
  */
 class GameOverScreen(
     private val game: NebulaDriftGame,
-    private val i18n: I18nManager
+    private val i18n: I18nManager,
+    /**
+     * Android callback: when the user clicks "Main Menu", the host
+     * Activity finishes (back to Compose menus). Null on desktop —
+     * falls back to the libGDX [MenuScreen].
+     */
+    private val onExitToMenu: (() -> Unit)? = null,
 ) : KtxScreen {
 
     // ── Background ──────────────────────────────────────────────
@@ -178,7 +184,13 @@ class GameOverScreen(
         menuBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 GameSession.reset()
-                game.startTransition { game.setScreen<MenuScreen>() }
+                if (onExitToMenu != null) {
+                    // Android: finish Activity, return to Compose menu
+                    onExitToMenu?.invoke()
+                } else {
+                    // Desktop: transition to libGDX MenuScreen
+                    game.startTransition { game.setScreen<MenuScreen>() }
+                }
             }
         })
         lbBtn.addListener(object : ClickListener() {

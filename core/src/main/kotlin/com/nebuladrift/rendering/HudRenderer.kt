@@ -6,36 +6,37 @@ import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.graphics.g2d.TextureRegion
+import com.badlogic.gdx.glutils.ShapeRenderer
 import com.nebuladrift.entities.Ship
 import com.nebuladrift.managers.I18nManager
+import com.nebuladrift.rendering.SpriteAtlas
 
 /**
  * Renders the gameplay HUD overlay — a compact top-left card with
- * lives (hearts drawn via ShapeRenderer), score, timer, and astronauts rescued.
- *
- * ## Crash-safety design
- *
- * Hearts are drawn with [ShapeRenderer.circle] + [ShapeRenderer.rect]
- * only (proven safe). No polygon, no triangle, no Unicode text hearts.
- * Wrapped in try-catch.
+ * lives (hearts drawn as a sprite via SpriteBatch), score, timer,
+ * and astronauts rescued.
  *
  * ## Layout (two-column: labels left, values right)
  *
- * Line 1: ♥♥♥  (hearts drawn with shapes)
+ * Line 1: ♥♥♥  (hearts — sprite from atlas)
  * Line 2: SCORE     1,234
  * Line 3: TIME      02:34
  * Line 4: ★         5  (astronauts rescued)
  */
-class HudRenderer {
+class HudRenderer(private val atlas: SpriteAtlas) {
 
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
     private val hudCamera = OrthographicCamera()
 
+    /** Heart sprite region (generated at 48×48, drawn at heartSize). */
+    private val heartRegion: TextureRegion? get() = atlas.findRegion("heart")
+
     private val margin = 12f
     private val cardPadding = 16f
     private val lineHeight = 32f
+    private val heartSize = 25f
 
     /** Space-themed font for values (score number, time, etc.). */
     private val spaceFont: BitmapFont get() = FontManager.space()
@@ -65,7 +66,6 @@ class HudRenderer {
         shapeRenderer.projectionMatrix = hudCamera.combined
         batch.projectionMatrix = hudCamera.combined
 
-        val viewportWidth = hudCamera.viewportWidth
         val viewportHeight = hudCamera.viewportHeight
 
         // Card dimensions — wider to fit Orbitron values without overflow
@@ -78,7 +78,7 @@ class HudRenderer {
         val rightEdge = cardX + cardW - cardPadding
 
         // ════════════════════════════════════════════════════════
-        // PHASE 1: ShapeRenderer — no SpriteBatch active
+        // PHASE 1: ShapeRenderer — card background + border only
         // ════════════════════════════════════════════════════════
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
 
@@ -90,10 +90,6 @@ class HudRenderer {
         shapeRenderer.setColor(0.2f, 0.5f, 1f, 0.15f)
         shapeRenderer.rect(cardX + 2f, cardY + cardH - 4f, cardW - 4f, 3f)
 
-        // Hearts (drawn with circles + rect, no polygon)
-        val heartsY = cardY + cardH - cardPadding - 4f
-        drawHeartsShape(cardX + cardPadding, heartsY, ship.lives)
-
         shapeRenderer.end()
 
         // Border
@@ -103,9 +99,13 @@ class HudRenderer {
         shapeRenderer.end()
 
         // ════════════════════════════════════════════════════════
-        // PHASE 2: SpriteBatch — two-column layout
+        // PHASE 2: SpriteBatch — hearts + text
         // ════════════════════════════════════════════════════════
         batch.begin()
+
+        // Line 1: Hearts (sprite)
+        val heartsY = cardY + cardH - cardPadding - 4f
+        drawHearts(batch, cardX + cardPadding, heartsY, ship.lives)
 
         // Line 2: SCORE (label left, value right)
         val scoreLabelY = heartsY - lineHeight
@@ -152,42 +152,26 @@ class HudRenderer {
     }
 
     /**
-     * Draw a heart shape using only [ShapeRenderer.circle] and [ShapeRenderer.rect].
-     * Two circles (top bumps) + rect (middle fill) + bottom-tip circle = heart shape.
-     * Zero polygon/triangle calls — safe on all Android GL backends.
+     * Draw hearts as sprites — one [TextureRegion] draw per heart.
+     * Software-rendered via Pixmap (no GL shape-renderer issues).
      */
-    private fun drawHeartsShape(x: Float, y: Float, lives: Int) {
-        val heartSize = 25f
+    private fun drawHearts(batch: SpriteBatch, x: Float, y: Float, lives: Int) {
+        val region = heartRegion ?: return
         val gap = heartSize * 2.2f
 
         for (i in 0 until 3) {
             val hx = x + i * gap
-            val hy = y - heartSize    // bottom of this heart
+            val hy = y - heartSize
 
-            val bumpR = heartSize * 0.38f   // bigger top bumps = more heart-like
+            val c = if (i < lives.coerceIn(0, 3))
+                Color(1f, 0.2f, 0.3f, 0.9f)
+            else
+                Color(0.3f, 0.3f, 0.3f, 0.4f)
 
-            if (i < lives.coerceIn(0, 3)) {
-                shapeRenderer.setColor(1f, 0.2f, 0.3f, 0.9f)
-            } else {
-                shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 0.4f)
-            }
-
-            // Top-left bump
-            shapeRenderer.circle(hx + bumpR, hy + heartSize * 0.62f, bumpR)
-            // Top-right bump
-            shapeRenderer.circle(hx + heartSize - bumpR, hy + heartSize * 0.62f, bumpR)
-            // Middle fill — connects the two bumps
-            shapeRenderer.rect(
-                hx + heartSize * 0.1f, hy,
-                heartSize * 0.8f, heartSize * 0.5f
-            )
-            // Bottom tip — creates the V-point a real heart needs
-            shapeRenderer.circle(
-                hx + heartSize * 0.5f,
-                hy + heartSize * 0.08f,
-                heartSize * 0.18f
-            )
+            batch.setColor(c)
+            batch.draw(region, hx, hy, heartSize, heartSize)
         }
+        batch.setColor(Color.WHITE)
     }
 
     fun dispose() {

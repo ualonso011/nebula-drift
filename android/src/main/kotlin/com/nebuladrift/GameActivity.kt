@@ -8,27 +8,12 @@ import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 /**
  * Game-only Activity — runs libGDX gameplay in fullscreen.
  *
- * When gameplay ends, the result is passed back to [MainActivity]
- * via a [@Volatile] companion object ([pendingGameResult]) so the
- * Compose UI can show the game-over screen. This avoids cross-thread
- * races between the GL thread (where [GameLoop.onGameComplete]
- * fires) and the UI thread (where [onDestroy] and the Activity
- * result callback run).
+ * Game over is handled entirely inside libGDX via [GameOverScreen]
+ * (Scene2D UI with score, stats, Retry, and Main Menu). The Activity
+ * only finishes (returns to Compose menus in [MainActivity]) when
+ * the user clicks "Main Menu".
  */
 class GameActivity : AndroidApplication() {
-
-    companion object {
-        /**
-         * Holds the most recent game result. Written on the GL thread
-         * (inside [GameLoop.onGameComplete]), read on the UI thread
-         * (inside [MainActivity]'s launcher callback).
-         *
-         * [@Volatile] guarantees visibility across threads without
-         * requiring a synchronized block or Handler happens-before.
-         */
-        @Volatile
-        var pendingGameResult: GameLoop.GameResult? = null
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,22 +25,9 @@ class GameActivity : AndroidApplication() {
         }
 
         val game = GameLoop().also { loop ->
-            loop.onGameComplete = { result ->
-                // Write to @Volatile field — immediately visible to
-                // the UI thread when MainActivity's callback reads it.
-                pendingGameResult = result
-
-                // Properly dispose the GL thread listener.
-                // Without this the render loop keeps running.
+            loop.onExitToMenu = {
                 Gdx.app.exit()
-
-                // Set the result BEFORE finish() — Android captures the
-                // result code at finish() time. setResult() in onDestroy()
-                // is too late; the system discards it after onPause().
-                runOnUiThread {
-                    setResult(RESULT_OK)
-                    finish()
-                }
+                runOnUiThread { finish() }
             }
         }
 
@@ -63,8 +35,6 @@ class GameActivity : AndroidApplication() {
     }
 
     override fun onDestroy() {
-        // Result is already set in the runOnUiThread Runnable above.
-        // onDestroy only needs to run super (libGDX lifecycle cleanup).
         super.onDestroy()
     }
 }

@@ -21,42 +21,17 @@ import com.nebuladrift.ui.theme.SpaceTheme
 /**
  * Main Activity — Compose-based menus for Nebula Drift.
  *
- * Delegates gameplay to [GameActivity] via an Intent and receives
- * the game result (score, stats) through extras.
+ * Delegates gameplay to [GameActivity]. The Game Over screen is
+ * rendered inside libGDX (Scene2D), so this Activity only needs
+ * to re-render its Compose UI when [GameActivity] finishes.
  */
 class MainActivity : ComponentActivity() {
 
-    private var activeGameOverData: GameOverData? = null
-
     private val gameLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val gr = GameActivity.pendingGameResult
-            if (gr == null) {
-                // Result signal arrived before the @Volatile write
-                // propagated — rare but handle gracefully.
-                return@registerForActivityResult
-            }
-            GameActivity.pendingGameResult = null // consume immediately
-            activeGameOverData = GameOverData(
-                score = gr.score,
-                timeFormatted = gr.timeFormatted,
-                asteroidsDestroyed = gr.asteroidsDestroyed,
-                enemiesDestroyed = gr.enemiesDestroyed,
-                astronautsRescued = gr.astronautsRescued,
-                astronautsKilled = gr.astronautsKilled,
-            )
-            setContent {
-                SpaceTheme {
-                    NebulaDriftApp(
-                        gameOverData = activeGameOverData,
-                        onLaunchGame = { launchGame() },
-                        onGameOverConsumed = { activeGameOverData = null },
-                    )
-                }
-            }
-        }
+    ) {
+        // Game result is handled entirely inside libGDX GameOverScreen.
+        // Nothing to do here — the Compose menu is shown as-is.
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

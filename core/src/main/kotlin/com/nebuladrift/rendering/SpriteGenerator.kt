@@ -89,6 +89,9 @@ object SpriteGenerator {
     internal fun generateParticlePixmap(): Pixmap =
         createParticleSprite()
 
+    internal fun generateHeartPixmap(): Pixmap =
+        createHeartSprite()
+
     // ── Atlas building ───────────────────────────────────────────
 
     /**
@@ -159,6 +162,9 @@ object SpriteGenerator {
 
         // Particle (white circle for particle effects)
         map["particle"] = createParticleSprite()
+
+        // Heart (HUD lives indicator)
+        map["heart"] = createHeartSprite()
 
         // Explosions (3 sizes × 6 frames)
         val explosionDefs = listOf(
@@ -1256,6 +1262,48 @@ object SpriteGenerator {
         // White filled circle — tinted at render time via batch colour
         pix.setColor(1f, 1f, 1f, 1f)
         pix.fillCircle(s / 2, s / 2, s / 2 - 1)
+
+        return pix
+    }
+
+    // ── Heart sprite (HUD lives indicator) ────────────────────────
+
+    private fun createHeartSprite(): Pixmap {
+        val s = Constants.SPRITE_HEART
+        val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
+        pix.setColor(0f, 0f, 0f, 0f)
+        pix.fill()
+
+        val cx = s / 2
+        val cy = s / 2
+
+        // Heart drawn with circles + triangle in Pixmap coordinates
+        // (0,0 = top-left). The heart has two top bumps and a V-body.
+        pix.setColor(1f, 0.2f, 0.3f, 1f)
+
+        val hw = (s * 0.42f).toInt()    // half-width of the heart body
+        val hh = (s * 0.46f).toInt()    // half-height
+
+        // Top bumps (circles)
+        val bumpR = (s * 0.22f).toInt()  // radius ~11px for s=48
+        val b1x = cx - hw / 2
+        val b2x = cx + hw / 2
+        val bumpY = cy - hh / 3
+
+        pix.fillCircle(b1x, bumpY, bumpR)
+        pix.fillCircle(b2x, bumpY, bumpR)
+
+        // V-body (triangle from below bumps to bottom point)
+        val vTopY = bumpY + bumpR / 2
+        val tipY = cy + hh
+        pix.fillTriangle(
+            cx - hw, vTopY,   // left
+            cx + hw, vTopY,   // right
+            cx, tipY,          // bottom tip
+        )
+
+        // Fill any gap between circles and triangle
+        pix.fillRect(cx - hw, bumpY, hw * 2, vTopY - bumpY)
 
         return pix
     }

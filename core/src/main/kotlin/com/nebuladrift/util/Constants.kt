@@ -215,6 +215,7 @@ object Constants {
     const val SPRITE_EXPLOSION_MEDIUM = 64
     const val SPRITE_EXPLOSION_LARGE = 96
     const val SPRITE_EXPLOSION_FRAMES = 6
+    const val SPRITE_HEART = 48
     const val SPRITE_THRUST_FRAMES = 2
     const val SPRITE_ATLAS_MAX_WIDTH = 1024
 
