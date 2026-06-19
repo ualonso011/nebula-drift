@@ -228,10 +228,11 @@ class DifficultyTest {
         val beyondRamp = Constants.DIFFICULTY_SAFE_ZONE + Constants.DIFFICULTY_RAMP_DURATION + 1f
         difficultyManager.update(beyondRamp)
         val w = difficultyManager.enemyTypeWeights
-        assertEquals(0.4f, w.fighter, 0.001f, "Fighter should be 0.4 at max difficulty")
-        assertEquals(0.3f, w.frigate, 0.001f, "Frigate should be 0.3 at max difficulty")
+        assertEquals(0.35f, w.fighter, 0.001f, "Fighter should be 0.35 at max difficulty")
+        assertEquals(0.25f, w.frigate, 0.001f, "Frigate should be 0.25 at max difficulty")
         assertEquals(0.2f, w.destroyer, 0.001f, "Destroyer should be 0.2 at max difficulty")
         assertEquals(0.1f, w.clone, 0.001f, "Clone should be 0.1 at max difficulty")
+        assertEquals(0.1f, w.kamikaze, 0.001f, "Kamikaze should be 0.1 at max difficulty")
     }
 
     // ── EnemyTypeWeights ──────────────────────────────────────

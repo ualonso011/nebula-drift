@@ -5,6 +5,7 @@ import com.nebuladrift.entities.enemies.DarkClone
 import com.nebuladrift.entities.enemies.EnemyDamageState
 import com.nebuladrift.entities.enemies.EnemyType
 import com.nebuladrift.entities.enemies.HeavyDestroyer
+import com.nebuladrift.entities.enemies.Kamikaze
 import com.nebuladrift.entities.enemies.LightFighter
 import com.nebuladrift.entities.enemies.MediumFrigate
 import com.nebuladrift.util.Constants
@@ -140,6 +141,34 @@ class EnemyTest {
             "Over 20 instances, should see both 2 and 3 HP, got $hps")
     }
 
+    // ── Kamikaze (1 HP, 300 points) ────────────────────────────
+
+    @Test
+    fun `kamikaze starts with 1 HP`() {
+        val enemy = Kamikaze(Vector2(8f, 4.5f))
+        assertEquals(1, enemy.maxHealth, "Kamikaze should have 1 max HP")
+        assertEquals(1, enemy.health, "Kamikaze should start at full HP")
+        assertEquals(Constants.SCORE_KAMIKAZE, enemy.points, "Kamikaze should award 300 points")
+        assertEquals(EnemyType.KAMIKAZE, enemy.getType(), "Type should be KAMIKAZE")
+    }
+
+    @Test
+    fun `kamikaze destroyed on first hit`() {
+        val enemy = Kamikaze(Vector2(8f, 4.5f))
+        assertFalse(enemy.isDestroyed, "Should not be destroyed initially")
+        val destroyed = enemy.takeDamage()
+        assertTrue(destroyed, "takeDamage should return true when destroyed")
+        assertTrue(enemy.isDestroyed, "Kamikaze should be destroyed after 1 hit")
+    }
+
+    @Test
+    fun `kamikaze damage state is critical after hit`() {
+        val enemy = Kamikaze(Vector2(8f, 4.5f))
+        assertEquals(EnemyDamageState.PRISTINE, enemy.getDamageState(), "Full HP should be PRISTINE")
+        enemy.takeDamage()
+        assertEquals(EnemyDamageState.CRITICAL, enemy.getDamageState(), "0 HP should be CRITICAL")
+    }
+
     // ── Shared enemy mechanics ────────────────────────────────
 
     @Test
@@ -209,6 +238,7 @@ class EnemyTest {
         assertTrue(MediumFrigate(Vector2.Zero.cpy()).radius > 0f)
         assertTrue(HeavyDestroyer(Vector2.Zero.cpy()).radius > 0f)
         assertTrue(DarkClone(Vector2.Zero.cpy()).radius > 0f)
+        assertTrue(Kamikaze(Vector2.Zero.cpy()).radius > 0f)
     }
 
     @Test
