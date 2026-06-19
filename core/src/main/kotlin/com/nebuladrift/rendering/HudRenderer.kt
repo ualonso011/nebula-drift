@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.g2d.TextureRegion
-import com.badlogic.gdx.glutils.ShapeRenderer
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.nebuladrift.entities.Ship
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.rendering.SpriteAtlas
