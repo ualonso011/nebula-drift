@@ -33,9 +33,9 @@ class HudRenderer {
     private val layout = GlyphLayout()
 
     private val margin = 12f
-    private val cardPadding = 10f
-    private val lineHeight = 28f
-    private val heartSpacing = 28f
+    private val cardPadding = 14f
+    private val lineHeight = 34f
+    private val heartSpacing = 34f
 
     /** Space-themed font for score number and HUD values. */
     private val spaceFont: BitmapFont get() = FontManager.space()
@@ -69,8 +69,8 @@ class HudRenderer {
         val viewportHeight = hudCamera.viewportHeight
 
         // Card dimensions — compact, top-left
-        val cardW = 180f
-        val cardH = 90f
+        val cardW = 260f
+        val cardH = 120f
         val cardX = margin
         val cardY = viewportHeight - margin - cardH
 
@@ -109,10 +109,10 @@ class HudRenderer {
         hudFont.draw(batch, "SCORE", cardX + cardPadding, scoreY)
 
         spaceFont.color = Color.WHITE
-        spaceFont.data.setScale(1.4f)
+        spaceFont.data.setScale(1.6f)
         val scoreText = "%,d".format(score)
         layout.setText(spaceFont, scoreText)
-        spaceFont.draw(batch, scoreText, cardX + cardPadding + 60f, scoreY)
+        spaceFont.draw(batch, scoreText, cardX + cardPadding + 70f, scoreY)
         spaceFont.data.setScale(1f)
 
         // Line 3: Timer
@@ -123,7 +123,7 @@ class HudRenderer {
         hudFont.draw(batch, timerLabel, cardX + cardPadding, timerY)
 
         spaceFont.color = Color.WHITE
-        spaceFont.data.setScale(0.7f)
+        spaceFont.data.setScale(0.85f)
         spaceFont.draw(batch, timeString, cardX + cardPadding + layout.width, timerY)
         spaceFont.data.setScale(1f)
 
@@ -141,6 +141,9 @@ class HudRenderer {
     private fun drawHearts(x: Float, y: Float, lives: Int) {
         val heartChar = "\u2665" // ♥
 
+        // Scale up hearts for visibility
+        hudFont.data.setScale(1.3f)
+
         // Filled hearts (red)
         hudFont.color = Color(1f, 0.2f, 0.3f, 0.9f)
         for (i in 0 until lives.coerceIn(0, 3)) {
@@ -153,6 +156,7 @@ class HudRenderer {
             hudFont.draw(batch, heartChar, x + i * heartSpacing, y)
         }
 
+        hudFont.data.setScale(1f)
         hudFont.color = Color.WHITE
     }
 
