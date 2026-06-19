@@ -518,4 +518,132 @@ class CollisionTest {
             "Points for both enemies"
         )
     }
+
+    // ── Enemy ↔ Asteroid ──────────────────────────────────────
+
+    @Test
+    fun `enemy overlapping asteroid is destroyed`() {
+        val ship = Ship()
+        val enemy = LightFighter(Vector2(8.2f, 4.5f))
+        val asteroid = Asteroid(
+            position = Vector2(8.3f, 4.5f),
+            velocity = Vector2.Zero.cpy(),
+            size = AsteroidSize.LARGE
+        )
+        val ctx = GameContext(ship = ship, asteroids = mutableListOf(asteroid), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+
+        collisionSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.enemies.isEmpty(), "Enemy should be destroyed by asteroid")
+        assertEquals(0, ctx.score, "No score for enemy-asteroid collision")
+    }
+
+    @Test
+    fun `asteroid survives enemy collision`() {
+        val ship = Ship()
+        val enemy = LightFighter(Vector2(8.2f, 4.5f))
+        val asteroid = Asteroid(
+            position = Vector2(8.3f, 4.5f),
+            velocity = Vector2.Zero.cpy(),
+            size = AsteroidSize.LARGE
+        )
+        val ctx = GameContext(ship = ship, asteroids = mutableListOf(asteroid), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+
+        collisionSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.asteroids.isNotEmpty(), "Asteroid should survive")
+    }
+
+    @Test
+    fun `enemy and asteroid far apart do not collide`() {
+        val ship = Ship()
+        val enemy = LightFighter(Vector2(8f, 4.5f))
+        val asteroid = Asteroid(
+            position = Vector2(15f, 4.5f),
+            velocity = Vector2.Zero.cpy(),
+            size = AsteroidSize.LARGE
+        )
+        val ctx = GameContext(ship = ship, asteroids = mutableListOf(asteroid), lasers = mutableListOf(),
+            enemies = mutableListOf(enemy), events = mutableListOf(), score = 0)
+
+        collisionSystem.update(0.016f, ctx)
+
+        assertTrue(ctx.enemies.isNotEmpty(), "Enemy should survive")
+    }
+
+    // ── Astronaut ↔ Asteroid ──────────────────────────────────
+
+    @Test
+    fun `astronaut overlapping asteroid is killed`() {
+        val ship = Ship()
+        val astronaut = Astronaut(Vector2(8.2f, 4.5f))
+        val asteroid = Asteroid(
+            position = Vector2(8.3f, 4.5f),
+            velocity = Vector2.Zero.cpy(),
+            size = AsteroidSize.LARGE
+        )
+        val ctx = GameContext(ship = ship, asteroids = mutableListOf(asteroid), lasers = mutableListOf(),
+            astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 0)
+
+        collisionSystem.update(0.016f, ctx)
+
+        assertEquals(Astronaut.State.DEAD, astronaut.state, "Astronaut should be killed by asteroid")
+        assertTrue(ctx.events.any { it is GameEvent.AstronautKilled }, "Kill event should fire")
+    }
+
+    @Test
+    fun `astronaut kill by asteroid deducts penalty`() {
+        val ship = Ship()
+        val astronaut = Astronaut(Vector2(8.2f, 4.5f))
+        val asteroid = Asteroid(
+            position = Vector2(8.3f, 4.5f),
+            velocity = Vector2.Zero.cpy(),
+            size = AsteroidSize.LARGE
+        )
+        val ctx = GameContext(ship = ship, asteroids = mutableListOf(asteroid), lasers = mutableListOf(),
+            astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 100)
+
+        collisionSystem.update(0.016f, ctx)
+
+        assertEquals(100 - Constants.SCORE_ASTRONAUT_KILL_PENALTY, ctx.score,
+            "Score should be reduced by kill penalty")
+    }
+
+    @Test
+    fun `rescued astronaut does not die from asteroid`() {
+        val ship = Ship()
+        val astronaut = Astronaut(Vector2(8.2f, 4.5f))
+        astronaut.rescue()
+        val asteroid = Asteroid(
+            position = Vector2(8.3f, 4.5f),
+            velocity = Vector2.Zero.cpy(),
+            size = AsteroidSize.LARGE
+        )
+        val ctx = GameContext(ship = ship, asteroids = mutableListOf(asteroid), lasers = mutableListOf(),
+            astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 0)
+
+        collisionSystem.update(0.016f, ctx)
+
+        assertEquals(Astronaut.State.RESCUED, astronaut.state, "Rescued astronaut should not die")
+        assertEquals(0, ctx.score, "No penalty")
+    }
+
+    @Test
+    fun `astronaut and asteroid far apart do not collide`() {
+        val ship = Ship()
+        val astronaut = Astronaut(Vector2(8f, 4.5f))
+        val asteroid = Asteroid(
+            position = Vector2(15f, 4.5f),
+            velocity = Vector2.Zero.cpy(),
+            size = AsteroidSize.LARGE
+        )
+        val ctx = GameContext(ship = ship, asteroids = mutableListOf(asteroid), lasers = mutableListOf(),
+            astronauts = mutableListOf(astronaut), events = mutableListOf(), score = 0)
+
+        collisionSystem.update(0.016f, ctx)
+
+        assertEquals(Astronaut.State.FLOATING, astronaut.state, "Astronaut should survive")
+    }
 }

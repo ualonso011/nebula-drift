@@ -41,6 +41,10 @@ class CollisionSystem : GameSystem {
 
         // Laser ↔ Laser
         checkLaserLaserCollisions(context)
+
+        // Entity ↔ Asteroid (enemies and astronauts die on contact)
+        checkEnemyAsteroidCollisions(context)
+        checkAstronautAsteroidCollisions(context)
     }
 
     // ── Laser ↔ Asteroid ──────────────────────────────────────
@@ -313,6 +317,50 @@ class CollisionSystem : GameSystem {
         }
 
         context.lasers.removeAll(lasersToRemove)
+    }
+
+    // ── Enemy ↔ Asteroid ─────────────────────────────────────
+
+    /**
+     * When an enemy overlaps an asteroid, the enemy is destroyed
+     * (no points — the player didn't cause it). The asteroid is NOT
+     * removed so it continues its path.
+     */
+    private fun checkEnemyAsteroidCollisions(context: GameContext) {
+        val enemiesToRemove = mutableListOf<Enemy>()
+
+        for (enemy in context.enemies) {
+            for (asteroid in context.asteroids) {
+                if (overlap(enemy, asteroid)) {
+                    enemiesToRemove.add(enemy)
+                    // Enemy destroyed by asteroid — no score event
+                    break
+                }
+            }
+        }
+
+        context.enemies.removeAll(enemiesToRemove)
+    }
+
+    // ── Astronaut ↔ Asteroid ─────────────────────────────────
+
+    /**
+     * When a floating astronaut overlaps an asteroid, the astronaut
+     * is killed — same as being hit by a laser.
+     */
+    private fun checkAstronautAsteroidCollisions(context: GameContext) {
+        for (astronaut in context.astronauts) {
+            if (astronaut.state != Astronaut.State.FLOATING) continue
+
+            for (asteroid in context.asteroids) {
+                if (overlap(astronaut, asteroid)) {
+                    astronaut.kill()
+                    context.events.add(GameEvent.AstronautKilled(astronaut))
+                    context.score -= Constants.SCORE_ASTRONAUT_KILL_PENALTY
+                    break
+                }
+            }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────
