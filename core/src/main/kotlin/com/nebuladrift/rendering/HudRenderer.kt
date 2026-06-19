@@ -73,8 +73,8 @@ class HudRenderer {
         val cardX = margin
         val cardY = viewportHeight - margin - cardH
 
-        // Right column X — where values start
-        val rightColX = cardX + cardW * 0.52f
+        // Right column X — values near the right edge of the card
+        val rightColX = cardX + cardW - cardPadding * 4f
 
         // ════════════════════════════════════════════════════════
         // PHASE 1: ShapeRenderer — no SpriteBatch active
@@ -152,7 +152,7 @@ class HudRenderer {
      * Zero polygon/triangle calls — safe on all Android GL backends.
      */
     private fun drawHeartsShape(x: Float, y: Float, lives: Int) {
-        val heartSize = 14f
+        val heartSize = 18f
         val gap = heartSize * 2.2f
 
         for (i in 0 until 3) {
