@@ -113,7 +113,7 @@ class HudRenderer {
         hudFont.draw(batch, "SCORE", cardX + cardPadding, scoreLabelY)
 
         spaceFont.color = Color.WHITE
-        spaceFont.data.setScale(1.0f)
+        spaceFont.data.setScale(0.85f)
         val scoreText = "%,d".format(score)
         val scoreLayout = GlyphLayout(spaceFont, scoreText)
         spaceFont.draw(batch, scoreText, rightEdge - scoreLayout.width, scoreLabelY)
@@ -153,7 +153,7 @@ class HudRenderer {
 
     /**
      * Draw a heart shape using only [ShapeRenderer.circle] and [ShapeRenderer.rect].
-     * Two circles (top bumps) + rect (bottom point area) = heart shape.
+     * Two circles (top bumps) + rect (middle fill) + bottom-tip circle = heart shape.
      * Zero polygon/triangle calls — safe on all Android GL backends.
      */
     private fun drawHeartsShape(x: Float, y: Float, lives: Int) {
@@ -162,24 +162,30 @@ class HudRenderer {
 
         for (i in 0 until 3) {
             val hx = x + i * gap
-            val hy = y - heartSize
+            val hy = y - heartSize    // bottom of this heart
+
+            val bumpR = heartSize * 0.38f   // bigger top bumps = more heart-like
 
             if (i < lives.coerceIn(0, 3)) {
-                // Filled heart (red)
                 shapeRenderer.setColor(1f, 0.2f, 0.3f, 0.9f)
             } else {
-                // Empty heart (grey)
                 shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 0.4f)
             }
 
             // Top-left bump
-            shapeRenderer.circle(hx + heartSize * 0.35f, hy + heartSize * 0.65f, heartSize * 0.35f)
+            shapeRenderer.circle(hx + bumpR, hy + heartSize * 0.62f, bumpR)
             // Top-right bump
-            shapeRenderer.circle(hx + heartSize * 0.75f, hy + heartSize * 0.65f, heartSize * 0.35f)
-            // Bottom rect (connects the bumps into a heart shape)
+            shapeRenderer.circle(hx + heartSize - bumpR, hy + heartSize * 0.62f, bumpR)
+            // Middle fill — connects the two bumps
             shapeRenderer.rect(
-                hx + heartSize * 0.15f, hy,
-                heartSize * 0.8f, heartSize * 0.55f
+                hx + heartSize * 0.1f, hy,
+                heartSize * 0.8f, heartSize * 0.5f
+            )
+            // Bottom tip — creates the V-point a real heart needs
+            shapeRenderer.circle(
+                hx + heartSize * 0.5f,
+                hy + heartSize * 0.08f,
+                heartSize * 0.18f
             )
         }
     }

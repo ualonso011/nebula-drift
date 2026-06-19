@@ -49,10 +49,13 @@ class GameActivity : AndroidApplication() {
                 // Without this the render loop keeps running.
                 Gdx.app.exit()
 
-                // Guarantee the Activity finishes without requiring a
-                // user back-press. Both calls are needed — exit() alone
-                // only pauses the GL surface without finishing the Activity.
-                runOnUiThread { finish() }
+                // Set the result BEFORE finish() — Android captures the
+                // result code at finish() time. setResult() in onDestroy()
+                // is too late; the system discards it after onPause().
+                runOnUiThread {
+                    setResult(RESULT_OK)
+                    finish()
+                }
             }
         }
 
@@ -60,10 +63,8 @@ class GameActivity : AndroidApplication() {
     }
 
     override fun onDestroy() {
-        // Signal to MainActivity: result is available via
-        // pendingGameResult. No Intent extras needed — the
-        // @Volatile field is the source of truth.
-        setResult(RESULT_OK)
+        // Result is already set in the runOnUiThread Runnable above.
+        // onDestroy only needs to run super (libGDX lifecycle cleanup).
         super.onDestroy()
     }
 }
