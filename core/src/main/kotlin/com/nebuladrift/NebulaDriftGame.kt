@@ -58,10 +58,10 @@ open class NebulaDriftGame : KtxGame<KtxScreen>() {
     private var pendingSwitchAction: (() -> Unit)? = null
 
     /** Batch used exclusively for rendering the transition overlay. */
-    private lateinit var transitionBatch: SpriteBatch
+    protected lateinit var transitionBatch: SpriteBatch
 
     /** 1×1 white texture used as the overlay fill rect. */
-    private var whiteTexture: Texture? = null
+    protected var whiteTexture: Texture? = null
 
     /**
      * Start a fade transition and schedule [switchAction] to execute

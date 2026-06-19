@@ -1,10 +1,16 @@
 package com.nebuladrift
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.Pixmap
+import com.badlogic.gdx.graphics.Texture
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
+import com.nebuladrift.rendering.FontManager
+import com.nebuladrift.rendering.SpriteGenerator
 import com.nebuladrift.screens.GameScreen
 import com.nebuladrift.screens.GameSession
-import ktx.app.removeScreen
 
 /**
  * Minimal libGDX game loop for Android.
@@ -25,11 +31,23 @@ class GameLoop : NebulaDriftGame() {
     override fun create() {
         Gdx.app.log("GameLoop", "=== create() ===")
 
-        // Initialize the full game (transition system, all screens, fonts, atlas)
-        super.create()
+        // Initialize core systems (audio, fonts, atlas, i18n)
+        AudioManager.init()
+        FontManager.init()
 
-        // Override GameScreen with onGameOver callback for Android
-        removeScreen<GameScreen>()
+        i18n = I18nManager().also { it.init() }
+        atlas = SpriteGenerator.generateAtlas()
+
+        // Initialize transition system (required by NebulaDriftGame.render)
+        val pix = Pixmap(1, 1, Pixmap.Format.RGBA8888)
+        pix.setColor(Color.WHITE)
+        pix.fill()
+        whiteTexture = Texture(pix)
+        pix.dispose()
+
+        transitionBatch = SpriteBatch()
+
+        // Add GameScreen with onGameOver callback for Android
         addScreen(
             GameScreen(
                 game = this as NebulaDriftGame,
