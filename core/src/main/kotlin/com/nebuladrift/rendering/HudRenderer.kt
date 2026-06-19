@@ -155,23 +155,28 @@ class HudRenderer {
     /**
      * Draw lives as Unicode hearts (♥).
      * Filled red for remaining lives, grey for empty slots.
+     * Uses Space font (Orbitron) which has better Unicode coverage.
      */
     private fun drawHearts(x: Float, y: Float, lives: Int) {
         val heartChar = "\u2665" // ♥
 
+        // Use Space font at fixed scale for hearts
+        spaceFont.data.setScale(1.2f)
+
         // Filled hearts (red)
-        hudFont.color = Color(1f, 0.2f, 0.3f, 0.9f)
+        spaceFont.color = Color(1f, 0.2f, 0.3f, 0.9f)
         for (i in 0 until lives.coerceIn(0, 3)) {
-            hudFont.draw(batch, heartChar, x + i * heartSpacing, y)
+            spaceFont.draw(batch, heartChar, x + i * heartSpacing, y)
         }
 
         // Empty hearts (grey)
-        hudFont.color = Color(0.3f, 0.3f, 0.3f, 0.4f)
+        spaceFont.color = Color(0.3f, 0.3f, 0.3f, 0.4f)
         for (i in lives.coerceIn(0, 3) until 3) {
-            hudFont.draw(batch, heartChar, x + i * heartSpacing, y)
+            spaceFont.draw(batch, heartChar, x + i * heartSpacing, y)
         }
 
-        hudFont.color = Color.WHITE
+        spaceFont.data.setScale(1f)
+        spaceFont.color = Color.WHITE
     }
 
     fun dispose() {

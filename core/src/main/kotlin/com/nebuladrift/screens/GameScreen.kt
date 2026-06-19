@@ -274,14 +274,12 @@ class GameScreen(
         GameSession.astronautsKilled = scoreSystem.astronautsKilled
 
         if (onGameOver != null) {
+            // Android path: callback handles the result, no transition needed
             onGameOver?.invoke()
         } else {
+            // Desktop path: use transition to GameOverScreen
             game.startTransition { game.setScreen<GameOverScreen>() }
         }
-        // Note: the null check + ?.invoke() looks redundant, but
-        // Kotlin 1.9.x needs explicit ?.invoke() on nullable function
-        // type vals in some contexts. The smart-cast from != null
-        // check doesn't always apply to property vals.
     }
 
     // ── Helpers ───────────────────────────────────────────────

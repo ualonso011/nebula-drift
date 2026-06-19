@@ -63,6 +63,17 @@ class CollisionSystem : GameSystem {
                     lasersToRemove.add(laser)
                     context.events.add(GameEvent.LaserAsteroidHit(laser, asteroid))
 
+                    // Impact effect: slow asteroid and deflect trajectory
+                    asteroid.velocity.scl(0.7f) // reduce speed by 30%
+                    // Nudge trajectory perpendicular to incoming laser
+                    val nudgeAngle = Random.nextFloat() * 0.6f - 0.3f // ±0.3 radians
+                    val cosA = kotlin.math.cos(nudgeAngle.toDouble()).toFloat()
+                    val sinA = kotlin.math.sin(nudgeAngle.toDouble()).toFloat()
+                    val oldVx = asteroid.velocity.x
+                    val oldVy = asteroid.velocity.y
+                    asteroid.velocity.x = oldVx * cosA - oldVy * sinA
+                    asteroid.velocity.y = oldVx * sinA + oldVy * cosA
+
                     if (asteroid.hit()) {
                         // Asteroid destroyed — award points and split
                         asteroidsToRemove.add(asteroid)
@@ -97,16 +108,6 @@ class CollisionSystem : GameSystem {
                         context.events.add(GameEvent.ShipDestroyed(ship))
                     }
                     toRemove.add(asteroid)
-
-                    // Impact effect: slow down ship and deflect trajectory
-                    // Reduce velocity by 60% on impact
-                    ship.velocity.scl(0.4f)
-                    // Add a deflection impulse away from the asteroid
-                    val dx = ship.position.x - asteroid.position.x
-                    val dy = ship.position.y - asteroid.position.y
-                    val len = kotlin.math.sqrt(dx * dx + dy * dy).coerceAtLeast(0.01f)
-                    ship.velocity.x += (dx / len) * 3f
-                    ship.velocity.y += (dy / len) * 3f
                 }
                 break // Only one collision per frame
             }

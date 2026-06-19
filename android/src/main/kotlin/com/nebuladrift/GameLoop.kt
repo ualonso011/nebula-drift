@@ -1,12 +1,10 @@
 package com.nebuladrift
 
 import com.badlogic.gdx.Gdx
-import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
-import com.nebuladrift.rendering.FontManager
-import com.nebuladrift.rendering.SpriteGenerator
 import com.nebuladrift.screens.GameScreen
 import com.nebuladrift.screens.GameSession
+import ktx.app.removeScreen
 
 /**
  * Minimal libGDX game loop for Android.
@@ -27,14 +25,11 @@ class GameLoop : NebulaDriftGame() {
     override fun create() {
         Gdx.app.log("GameLoop", "=== create() ===")
 
-        AudioManager.init()
-        FontManager.init()
+        // Initialize the full game (transition system, all screens, fonts, atlas)
+        super.create()
 
-        val i18n = I18nManager()
-        i18n.init()
-
-        val atlas = SpriteGenerator.generateAtlas()
-
+        // Override GameScreen with onGameOver callback for Android
+        removeScreen<GameScreen>()
         addScreen(
             GameScreen(
                 game = this as NebulaDriftGame,
