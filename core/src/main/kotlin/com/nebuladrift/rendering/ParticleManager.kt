@@ -185,6 +185,33 @@ class ParticleManager(atlas: SpriteAtlas? = null) {
     }
 
     /**
+     * Spawn a cyan/white disintegration burst (laser-vs-laser).
+     */
+    fun spawnLaserDisintegrate(position: Vector2) {
+        val count = 12
+        val available = (Constants.PARTICLE_MAX_COUNT - particles.size).coerceAtLeast(0)
+        val actualCount = count.coerceAtMost(available)
+
+        for (i in 0 until actualCount) {
+            val p = obtain()
+            val angle = Random.nextFloat() * 360f
+            val speed = 1.0f + Random.nextFloat() * 2.5f
+            p.x = position.x
+            p.y = position.y
+            p.vx = cos(angle * DEG_TO_RAD) * speed
+            p.vy = sin(angle * DEG_TO_RAD) * speed
+            p.life = 0.2f + Random.nextFloat() * 0.3f
+            p.maxLife = p.life
+            // Cyan-to-white gradient
+            val t = Random.nextFloat()
+            p.color.set(0.5f + t * 0.5f, 0.8f + t * 0.2f, 1f, 1f)
+            p.size = 0.04f + Random.nextFloat() * 0.06f
+            p.alpha = 1f
+            particles.add(p)
+        }
+    }
+
+    /**
      * Spawn red/orange damage sparks at [position] (ship hit).
      */
     fun spawnDamageSparks(position: Vector2) {
@@ -224,6 +251,12 @@ class ParticleManager(atlas: SpriteAtlas? = null) {
                 is GameEvent.ShipHit -> spawnDamageSparks(event.ship.position)
                 is GameEvent.AstronautRescued -> spawnRescueSparkle(event.astronaut.position)
                 is GameEvent.DebrisCollected -> spawnDebrisSparkle(event.debris.position)
+                is GameEvent.LaserLaserHit -> {
+                    // Spawn disintegrate effect at midpoint of both lasers
+                    val midX = (event.playerLaser.position.x + event.enemyLaser.position.x) / 2f
+                    val midY = (event.playerLaser.position.y + event.enemyLaser.position.y) / 2f
+                    spawnLaserDisintegrate(Vector2(midX, midY))
+                }
                 else -> { /* LaserFired, AstronautKilled, LaserAsteroidHit — no particle feedback */ }
             }
         }

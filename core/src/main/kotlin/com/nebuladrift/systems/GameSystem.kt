@@ -72,6 +72,9 @@ sealed class GameEvent {
 
     /** Space debris was collected by the ship (extra life). */
     data class DebrisCollected(val debris: SpaceDebris) : GameEvent()
+
+    /** A player laser collided with an enemy laser — both disintegrated. */
+    data class LaserLaserHit(val playerLaser: Laser, val enemyLaser: Laser) : GameEvent()
 }
 
 /**

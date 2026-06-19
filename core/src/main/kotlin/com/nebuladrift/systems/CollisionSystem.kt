@@ -38,6 +38,9 @@ class CollisionSystem : GameSystem {
         // Enemy laser collisions (Phase 2 — new)
         checkEnemyLaserShipCollisions(context)
         checkEnemyLaserAsteroidCollisions(context)
+
+        // Laser ↔ Laser
+        checkLaserLaserCollisions(context)
     }
 
     // ── Laser ↔ Asteroid ──────────────────────────────────────
@@ -264,6 +267,35 @@ class CollisionSystem : GameSystem {
             for (asteroid in context.asteroids) {
                 if (overlap(laser, asteroid)) {
                     lasersToRemove.add(laser)
+                    break
+                }
+            }
+        }
+
+        context.lasers.removeAll(lasersToRemove)
+    }
+
+    // ── Laser ↔ Laser ─────────────────────────────────────────
+
+    /**
+     * When a player laser overlaps an enemy laser, both are consumed
+     * and a disintegration effect is emitted.
+     */
+    private fun checkLaserLaserCollisions(context: GameContext) {
+        val lasersToRemove = mutableListOf<Laser>()
+
+        for (playerLaser in context.lasers) {
+            if (playerLaser.owner != LaserOwner.PLAYER) continue
+            if (lasersToRemove.contains(playerLaser)) continue
+
+            for (enemyLaser in context.lasers) {
+                if (enemyLaser.owner == LaserOwner.PLAYER) continue
+                if (lasersToRemove.contains(enemyLaser)) continue
+
+                if (overlap(playerLaser, enemyLaser)) {
+                    lasersToRemove.add(playerLaser)
+                    lasersToRemove.add(enemyLaser)
+                    context.events.add(GameEvent.LaserLaserHit(playerLaser, enemyLaser))
                     break
                 }
             }
