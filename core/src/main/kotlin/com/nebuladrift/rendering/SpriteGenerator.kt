@@ -1303,7 +1303,7 @@ object SpriteGenerator {
         )
 
         // Fill any gap between circles and triangle
-        pix.fillRect(cx - hw, bumpY, hw * 2, vTopY - bumpY)
+        pix.fillRectangle(cx - hw, bumpY, hw * 2, vTopY - bumpY)
 
         return pix
     }
