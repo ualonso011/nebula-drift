@@ -118,15 +118,18 @@ open class NebulaDriftGame : KtxGame<KtxScreen>() {
             Gdx.app.log("NebulaDriftGame", "transitionBatch creado")
 
             // Screens are created here so they share the same game reference.
-            // GameScreen and GameOverScreen access i18n through the game or
-            // receive it via constructor injection.
+            // Order matters: GameOverScreen must be created before GameScreen
+            // so it can be passed as a reference.
             Gdx.app.log("NebulaDriftGame", "Creando screens...")
+
+            val goScreen = GameOverScreen(this, i18n)
+            addScreen(goScreen)
+            Gdx.app.log("NebulaDriftGame", "GameOverScreen creado")
+
             addScreen(MenuScreen(this, i18n))
             Gdx.app.log("NebulaDriftGame", "MenuScreen creado")
-            addScreen(GameScreen(this, i18n, atlas))
+            addScreen(GameScreen(this, i18n, atlas, goScreen))
             Gdx.app.log("NebulaDriftGame", "GameScreen creado")
-            addScreen(GameOverScreen(this, i18n))
-            Gdx.app.log("NebulaDriftGame", "GameOverScreen creado")
             addScreen(SettingsScreen(this))
             Gdx.app.log("NebulaDriftGame", "SettingsScreen creado")
             addScreen(LeaderboardScreen(this, i18n))

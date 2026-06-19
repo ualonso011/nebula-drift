@@ -46,21 +46,23 @@ class GameLoop : NebulaDriftGame() {
 
         transitionBatch = SpriteBatch()
 
-        // Game screen (gameplay)
-        addScreen(GameScreen(
-            game = this,
-            i18n = i18n,
-            atlas = atlas,
-        ))
-
-        // Game Over screen (Scene2D with score, retry, main menu)
-        addScreen(GameOverScreen(
+        // Create GameOverScreen FIRST so we can pass it to GameScreen
+        val goScreen = GameOverScreen(
             game = this,
             i18n = i18n,
             onExitToMenu = {
                 GameSession.reset()
                 onExitToMenu?.invoke()
             },
+        )
+        addScreen(goScreen)
+
+        // Game screen (gameplay) — receives GameOverScreen by reference
+        addScreen(GameScreen(
+            game = this,
+            i18n = i18n,
+            atlas = atlas,
+            gameOverScreen = goScreen,
         ))
 
         setScreen<GameScreen>()

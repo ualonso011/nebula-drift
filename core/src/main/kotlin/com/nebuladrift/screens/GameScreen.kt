@@ -36,6 +36,7 @@ import com.nebuladrift.systems.PhysicsSystem
 import com.nebuladrift.systems.ScoreSystem
 import com.nebuladrift.systems.SpawnSystem
 import com.nebuladrift.util.Constants
+import com.badlogic.gdx.Game as LibGdxGame
 import com.nebuladrift.NebulaDriftGame
 
 /**
@@ -51,6 +52,8 @@ class GameScreen(
     private val game: NebulaDriftGame,
     private val i18n: I18nManager,
     private val atlas: SpriteAtlas,
+    /** Reference to the GameOverScreen to show when the ship is destroyed. */
+    private val gameOverScreen: GameOverScreen,
 ) : KtxScreen {
 
     // ── Rendering ─────────────────────────────────────────────
@@ -267,10 +270,11 @@ class GameScreen(
         GameSession.astronautsRescued = scoreSystem.astronautsRescued
         GameSession.astronautsKilled = scoreSystem.astronautsKilled
 
-        // Schedule screen switch between frames via postRunnable.
-        // This avoids mid-render issues with KtxGame.setScreen.
+        // Switch to GameOverScreen directly via postRunnable.
+        // We pass the instance directly (not the generic setScreen<T>)
+        // to avoid any type-lookup issues with KtxGame.
         Gdx.app.postRunnable {
-            game.startTransition { game.setScreen<GameOverScreen>() }
+            (game as LibGdxGame).setScreen(gameOverScreen)
         }
     }
 
