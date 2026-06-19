@@ -267,8 +267,11 @@ class GameScreen(
         GameSession.astronautsRescued = scoreSystem.astronautsRescued
         GameSession.astronautsKilled = scoreSystem.astronautsKilled
 
-        // Transition to libGDX GameOverScreen — both Android and desktop
-        game.startTransition { game.setScreen<GameOverScreen>() }
+        // Schedule screen switch between frames via postRunnable.
+        // This avoids mid-render issues with KtxGame.setScreen.
+        Gdx.app.postRunnable {
+            game.startTransition { game.setScreen<GameOverScreen>() }
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────

@@ -6,7 +6,7 @@ import com.badlogic.gdx.utils.I18NBundle
 /**
  * Manages internationalised strings via libGDX [I18NBundle].
  *
- * Default locale is **Euskera** (`eu`). The bundle files live in
+ * Default locale is **English** (`en`). The bundle files live in
  * `assets/i18n/`:
  * - `messages.properties`        — fallback (Euskera)
  * - `messages_eu.properties`     — Euskera
@@ -26,7 +26,7 @@ import com.badlogic.gdx.utils.I18NBundle
 class I18nManager {
 
     private var bundle: I18NBundle? = null
-    private var currentLocale = "eu"
+    private var currentLocale = "en"
 
     /**
      * Initialise the bundle with the default locale (Euskera).
