@@ -39,11 +39,11 @@ open class NebulaDriftGame : KtxGame<KtxScreen>() {
 
     /** Shared i18n instance used by all screens. */
     lateinit var i18n: I18nManager
-        private set
+        protected set
 
     /** Procedural sprite atlas shared by all game screens. */
     lateinit var atlas: SpriteAtlas
-        private set
+        protected set
 
     // ── Screen transition system ─────────────────────────────────
 
