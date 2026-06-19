@@ -31,15 +31,21 @@ class MainActivity : ComponentActivity() {
     private val gameLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        val data = result.data
-        if (result.resultCode == RESULT_OK && data != null) {
+        if (result.resultCode == RESULT_OK) {
+            val gr = GameActivity.pendingGameResult
+            if (gr == null) {
+                // Result signal arrived before the @Volatile write
+                // propagated — rare but handle gracefully.
+                return@registerForActivityResult
+            }
+            GameActivity.pendingGameResult = null // consume immediately
             activeGameOverData = GameOverData(
-                score = data.getIntExtra("score", 0),
-                timeFormatted = data.getStringExtra("time") ?: "00:00",
-                asteroidsDestroyed = data.getIntExtra("asteroidsDestroyed", 0),
-                enemiesDestroyed = data.getIntExtra("enemiesDestroyed", 0),
-                astronautsRescued = data.getIntExtra("astronautsRescued", 0),
-                astronautsKilled = data.getIntExtra("astronautsKilled", 0),
+                score = gr.score,
+                timeFormatted = gr.timeFormatted,
+                asteroidsDestroyed = gr.asteroidsDestroyed,
+                enemiesDestroyed = gr.enemiesDestroyed,
+                astronautsRescued = gr.astronautsRescued,
+                astronautsKilled = gr.astronautsKilled,
             )
             setContent {
                 SpaceTheme {

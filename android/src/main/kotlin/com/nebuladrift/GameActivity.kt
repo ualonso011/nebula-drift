@@ -1,6 +1,5 @@
 package com.nebuladrift
 
-import android.content.Intent
 import android.os.Bundle
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.android.AndroidApplication
@@ -9,14 +8,27 @@ import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 /**
  * Game-only Activity — runs libGDX gameplay in fullscreen.
  *
- * When gameplay ends, [Gdx.app.exit] properly disposes the GL
- * thread and [finish] tears down the Activity. The result is
- * passed back to [MainActivity] inside [onDestroy] so the
- * Compose UI can show the game-over screen.
+ * When gameplay ends, the result is passed back to [MainActivity]
+ * via a [@Volatile] companion object ([pendingGameResult]) so the
+ * Compose UI can show the game-over screen. This avoids cross-thread
+ * races between the GL thread (where [GameLoop.onGameComplete]
+ * fires) and the UI thread (where [onDestroy] and the Activity
+ * result callback run).
  */
 class GameActivity : AndroidApplication() {
 
-    private var gameResult: GameLoop.GameResult? = null
+    companion object {
+        /**
+         * Holds the most recent game result. Written on the GL thread
+         * (inside [GameLoop.onGameComplete]), read on the UI thread
+         * (inside [MainActivity]'s launcher callback).
+         *
+         * [@Volatile] guarantees visibility across threads without
+         * requiring a synchronized block or Handler happens-before.
+         */
+        @Volatile
+        var pendingGameResult: GameLoop.GameResult? = null
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,14 +41,17 @@ class GameActivity : AndroidApplication() {
 
         val game = GameLoop().also { loop ->
             loop.onGameComplete = { result ->
-                gameResult = result
-                // BOTH calls needed:
-                // 1. Gdx.app.exit() disposes the GL thread listener properly
-                // 2. runOnUiThread { finish() } guarantees the Activity
-                //    finishes and onDestroy delivers the result to MainActivity.
-                // Without (2) the user must press Back to see the Game Over
-                // screen. Without (1) the GL thread races with Activity teardown.
+                // Write to @Volatile field — immediately visible to
+                // the UI thread when MainActivity's callback reads it.
+                pendingGameResult = result
+
+                // Properly dispose the GL thread listener.
+                // Without this the render loop keeps running.
                 Gdx.app.exit()
+
+                // Guarantee the Activity finishes without requiring a
+                // user back-press. Both calls are needed — exit() alone
+                // only pauses the GL surface without finishing the Activity.
                 runOnUiThread { finish() }
             }
         }
@@ -45,21 +60,10 @@ class GameActivity : AndroidApplication() {
     }
 
     override fun onDestroy() {
-        // Set the result BEFORE super.onDestroy() disposes libGDX,
-        // so the intent is ready when the Activity result is delivered.
-        gameResult?.let { result ->
-            val intent = Intent().apply {
-                putExtra("score", result.score)
-                putExtra("time", result.timeFormatted)
-                putExtra("asteroidsDestroyed", result.asteroidsDestroyed)
-                putExtra("enemiesDestroyed", result.enemiesDestroyed)
-                putExtra("astronautsRescued", result.astronautsRescued)
-                putExtra("astronautsKilled", result.astronautsKilled)
-            }
-            setResult(RESULT_OK, intent)
-        } ?: run {
-            setResult(RESULT_CANCELED)
-        }
+        // Signal to MainActivity: result is available via
+        // pendingGameResult. No Intent extras needed — the
+        // @Volatile field is the source of truth.
+        setResult(RESULT_OK)
         super.onDestroy()
     }
 }

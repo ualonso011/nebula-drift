@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.BitmapFont
+import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.nebuladrift.entities.Ship
@@ -67,14 +68,14 @@ class HudRenderer {
         val viewportWidth = hudCamera.viewportWidth
         val viewportHeight = hudCamera.viewportHeight
 
-        // Card dimensions — top-left, wider for two-column layout
-        val cardW = 280f
-        val cardH = 160f
+        // Card dimensions — wider to fit Orbitron values without overflow
+        val cardW = 360f
+        val cardH = 180f
         val cardX = margin
         val cardY = viewportHeight - margin - cardH
 
-        // Right column X — values near the right edge of the card
-        val rightColX = cardX + cardW - cardPadding * 4f
+        // Right edge for right-aligned values (computed per-value via GlyphLayout)
+        val rightEdge = cardX + cardW - cardPadding
 
         // ════════════════════════════════════════════════════════
         // PHASE 1: ShapeRenderer — no SpriteBatch active
@@ -114,7 +115,8 @@ class HudRenderer {
         spaceFont.color = Color.WHITE
         spaceFont.data.setScale(1.0f)
         val scoreText = "%,d".format(score)
-        spaceFont.draw(batch, scoreText, rightColX, scoreLabelY)
+        val scoreLayout = GlyphLayout(spaceFont, scoreText)
+        spaceFont.draw(batch, scoreText, rightEdge - scoreLayout.width, scoreLabelY)
         spaceFont.data.setScale(1f)
 
         // Line 3: TIME (label left, value right)
@@ -124,7 +126,8 @@ class HudRenderer {
 
         spaceFont.color = Color.WHITE
         spaceFont.data.setScale(0.85f)
-        spaceFont.draw(batch, timeString, rightColX, timerY)
+        val timeLayout = GlyphLayout(spaceFont, timeString)
+        spaceFont.draw(batch, timeString, rightEdge - timeLayout.width, timerY)
         spaceFont.data.setScale(1f)
 
         // Line 4: Astronauts rescued (label left, value right)
@@ -135,7 +138,9 @@ class HudRenderer {
 
             spaceFont.color = Color(0.3f, 0.9f, 0.3f, 1f)
             spaceFont.data.setScale(1f)
-            spaceFont.draw(batch, astronautsRescued.toString(), rightColX, astroY)
+            val astroText = astronautsRescued.toString()
+            val astroLayout = GlyphLayout(spaceFont, astroText)
+            spaceFont.draw(batch, astroText, rightEdge - astroLayout.width, astroY)
             spaceFont.data.setScale(1f)
         }
 
@@ -152,7 +157,7 @@ class HudRenderer {
      * Zero polygon/triangle calls — safe on all Android GL backends.
      */
     private fun drawHeartsShape(x: Float, y: Float, lives: Int) {
-        val heartSize = 18f
+        val heartSize = 25f
         val gap = heartSize * 2.2f
 
         for (i in 0 until 3) {
