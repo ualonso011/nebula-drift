@@ -129,6 +129,7 @@ object SpriteGenerator {
         map["enemy_destroyer_2"] = createEnemyDestroyerSprite(2)
         map["enemy_destroyer_3"] = createEnemyDestroyerSprite(1)
         map["enemy_clone"] = createEnemyCloneSprite()
+        map["enemy_kamikaze"] = createEnemyKamikazeSprite()
 
         // Astronaut (3 states)
         map["astro_floating"] = createAstronautSprite()
@@ -809,6 +810,64 @@ object SpriteGenerator {
         pix.fillCircle((cx - h * 0.1f).roundToInt(), (cy - h * 0.3f).roundToInt(), 3)
         pix.fillCircle((cx + h * 0.2f).roundToInt(), (cy + h * 0.25f).roundToInt(), 3)
         pix.fillCircle((cx - h * 0.2f).roundToInt(), cy.roundToInt(), 2)
+
+        return pix
+    }
+
+    // ── Kamikaze sprite ──────────────────────────────────────────
+
+    private fun createEnemyKamikazeSprite(): Pixmap {
+        val s = Constants.SPRITE_ENEMY_FIGHTER // reuse fighter size
+        val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
+        pix.setColor(0f, 0f, 0f, 0f)
+        pix.fill()
+
+        val cx = s / 2f
+        val cy = s / 2f
+        val h = s * 0.35f
+
+        // Glowing orange/yellow aura (hot engine, kamikaze is fast)
+        pix.setColor(1f, 0.6f, 0f, 0.15f)
+        pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (h * 1.3f).roundToInt())
+        pix.setColor(1f, 0.7f, 0.1f, 0.25f)
+        pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (h * 1.0f).roundToInt())
+
+        // Main body — sleek arrow/dart shape (pointed right = toward player)
+        pix.setColor(0.9f, 0.5f, 0f, 1f) // bright orange
+        pix.fillRectangle((cx - h * 0.3f).roundToInt(), (cy - h * 0.15f).roundToInt(),
+                         (h * 0.8f).roundToInt(), (h * 0.3f).roundToInt())
+
+        // Pointed nose (right side — toward player)
+        fillTriangle(pix,
+            (cx + h * 0.9f).roundToInt(), cy.roundToInt(),
+            (cx + h * 0.3f).roundToInt(), (cy - h * 0.15f).roundToInt(),
+            (cx + h * 0.3f).roundToInt(), (cy + h * 0.15f).roundToInt()
+        )
+
+        // Tail fins (left side)
+        pix.setColor(0.7f, 0.35f, 0f, 1f)
+        fillTriangle(pix,
+            (cx - h * 0.3f).roundToInt(), (cy - h * 0.15f).roundToInt(),
+            (cx - h * 0.3f).roundToInt(), (cy - h * 0.7f).roundToInt(),
+            (cx - h * 0.7f).roundToInt(), (cy - h * 0.15f).roundToInt()
+        )
+        fillTriangle(pix,
+            (cx - h * 0.3f).roundToInt(), (cy + h * 0.15f).roundToInt(),
+            (cx - h * 0.3f).roundToInt(), (cy + h * 0.7f).roundToInt(),
+            (cx - h * 0.7f).roundToInt(), (cy + h * 0.15f).roundToInt()
+        )
+
+        // Warhead glow (bright white-hot tip)
+        pix.setColor(1f, 0.9f, 0.3f, 0.9f)
+        pix.fillCircle((cx + h * 0.7f).roundToInt(), cy.roundToInt(), (h * 0.12f).roundToInt())
+        pix.setColor(1f, 1f, 0.8f, 0.7f)
+        pix.fillCircle((cx + h * 0.65f).roundToInt(), cy.roundToInt(), (h * 0.06f).roundToInt())
+
+        // Exhaust trail (orange glow behind)
+        pix.setColor(1f, 0.4f, 0f, 0.4f)
+        pix.fillCircle((cx - h * 0.8f).roundToInt(), cy.roundToInt(), (h * 0.25f).roundToInt())
+        pix.setColor(1f, 0.6f, 0.1f, 0.6f)
+        pix.fillCircle((cx - h * 0.75f).roundToInt(), cy.roundToInt(), (h * 0.15f).roundToInt())
 
         return pix
     }

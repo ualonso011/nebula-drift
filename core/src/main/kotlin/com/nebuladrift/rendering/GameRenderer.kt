@@ -12,6 +12,7 @@ import com.nebuladrift.entities.AsteroidSize
 import com.nebuladrift.entities.DamageState
 import com.nebuladrift.entities.LaserOwner
 import com.nebuladrift.entities.enemies.EnemyType
+import com.nebuladrift.entities.enemies.Kamikaze
 import com.nebuladrift.systems.GameContext
 import com.nebuladrift.util.Constants
 import kotlin.math.sin
@@ -167,6 +168,7 @@ class GameRenderer(
                     }
                 }
                 EnemyType.DARK_CLONE -> "enemy_clone"
+                EnemyType.KAMIKAZE -> "enemy_kamikaze"
             }
             val region = atlas.findRegion(spriteName)
 
@@ -176,6 +178,7 @@ class GameRenderer(
                 EnemyType.MEDIUM_FRIGATE -> enemy.radius * 1.6f
                 EnemyType.HEAVY_DESTROYER -> enemy.radius * 2f
                 EnemyType.DARK_CLONE -> enemy.radius * 1.6f
+                EnemyType.KAMIKAZE -> enemy.radius * 2f
             }
             batch.draw(
                 region,

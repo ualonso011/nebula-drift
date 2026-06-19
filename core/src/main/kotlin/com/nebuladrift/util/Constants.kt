@@ -130,6 +130,13 @@ object Constants {
     const val SCORE_MEDIUM_FRIGATE = 250
     const val SCORE_HEAVY_DESTROYER = 400
     const val SCORE_DARK_CLONE = 500
+    const val SCORE_KAMIKAZE = 300
+
+    // ── Kamikaze ────────────────────────────────────────────────
+    /** Kamikaze speed toward player (units/s). */
+    const val ENEMY_KAMIKAZE_SPEED = 5f
+    /** Kamikaze collision radius. */
+    const val ENEMY_KAMIKAZE_RADIUS = 0.35f
 
     // ── Astronaut ──────────────────────────────────────────────
     /** Interval between astronaut spawns (seconds). */

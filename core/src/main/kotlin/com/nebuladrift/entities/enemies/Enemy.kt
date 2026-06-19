@@ -10,7 +10,8 @@ enum class EnemyType {
     LIGHT_FIGHTER,
     MEDIUM_FRIGATE,
     HEAVY_DESTROYER,
-    DARK_CLONE
+    DARK_CLONE,
+    KAMIKAZE
 }
 
 /**

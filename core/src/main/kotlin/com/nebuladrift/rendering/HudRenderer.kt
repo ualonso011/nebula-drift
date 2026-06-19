@@ -12,16 +12,17 @@ import com.nebuladrift.managers.I18nManager
 
 /**
  * Renders the gameplay HUD overlay — a compact top-left card with
- * lives (hearts), score, timer, and astronauts rescued.
+ * lives (hearts drawn via ShapeRenderer), score, timer, and astronauts rescued.
  *
  * ## Crash-safety design
  *
- * Uses **only** [ShapeRenderer.rect] for the card background.
- * Hearts rendered as Unicode text (♥) via [BitmapFont]. Wrapped in try-catch.
+ * Hearts are drawn with [ShapeRenderer.circle] + [ShapeRenderer.rect]
+ * only (proven safe). No polygon, no triangle, no Unicode text hearts.
+ * Wrapped in try-catch.
  *
  * ## Layout (top to bottom inside card)
  *
- * Line 1: ♥♥♥ (hearts)
+ * Line 1: ♥♥♥ (hearts drawn with shapes)
  * Line 2: SCORE 1,234
  * Line 3: TIME 02:34
  * Line 4: ★ 5 (astronauts rescued)
@@ -69,7 +70,7 @@ class HudRenderer {
         val viewportWidth = hudCamera.viewportWidth
         val viewportHeight = hudCamera.viewportHeight
 
-        // Card dimensions — top-left, tall enough for 4 lines
+        // Card dimensions — top-left
         val cardW = 240f
         val cardH = 140f
         val cardX = margin
@@ -88,6 +89,10 @@ class HudRenderer {
         shapeRenderer.setColor(0.2f, 0.5f, 1f, 0.15f)
         shapeRenderer.rect(cardX + 2f, cardY + cardH - 4f, cardW - 4f, 3f)
 
+        // Hearts (drawn with circles + rect, no polygon)
+        val heartsY = cardY + cardH - cardPadding - 4f
+        drawHeartsShape(cardX + cardPadding, heartsY, ship.lives)
+
         shapeRenderer.end()
 
         // Border
@@ -101,26 +106,20 @@ class HudRenderer {
         // ════════════════════════════════════════════════════════
         batch.begin()
 
-        // Line 1: Hearts (top of card)
-        val heartsY = cardY + cardH - cardPadding - 2f
-        drawHearts(cardX + cardPadding, heartsY, ship.lives)
-
-        // Line 2: Score — "SCORE" label + number on same line
+        // Line 2: Score
         val scoreLabelY = heartsY - lineHeight
         hudFont.color = Color(0.5f, 0.7f, 1f, 0.9f)
         hudFont.draw(batch, "SCORE ", cardX + cardPadding, scoreLabelY)
 
         spaceFont.color = Color.WHITE
-        spaceFont.data.setScale(1.4f)
+        spaceFont.data.setScale(1.0f)
         val scoreText = "%,d".format(score)
-        layout.setText(spaceFont, scoreText)
-        hudFont.data.setScale(1f) // reset before measuring label
         layout.setText(hudFont, "SCORE ")
         val labelW = layout.width
         spaceFont.draw(batch, scoreText, cardX + cardPadding + labelW, scoreLabelY)
         spaceFont.data.setScale(1f)
 
-        // Line 3: Timer — "TIME" label + value on same line
+        // Line 3: Timer
         val timerY = scoreLabelY - lineHeight
         hudFont.color = Color(0.8f, 0.85f, 0.95f, 1f)
         val timerLabel = "${i18n.get("time")}: "
@@ -136,7 +135,7 @@ class HudRenderer {
         if (astronautsRescued > 0) {
             val astroY = timerY - lineHeight
             hudFont.color = Color(0.3f, 0.9f, 0.3f, 1f)
-            hudFont.draw(batch, "\u2605 ", cardX + cardPadding, astroY) // ★
+            hudFont.draw(batch, "\u2605 ", cardX + cardPadding, astroY)
 
             layout.setText(hudFont, "\u2605 ")
             val starW = layout.width
@@ -153,30 +152,36 @@ class HudRenderer {
     }
 
     /**
-     * Draw lives as Unicode hearts (♥).
-     * Filled red for remaining lives, grey for empty slots.
-     * Uses Space font (Orbitron) which has better Unicode coverage.
+     * Draw a heart shape using only [ShapeRenderer.circle] and [ShapeRenderer.rect].
+     * Two circles (top bumps) + rect (bottom point area) = heart shape.
+     * Zero polygon/triangle calls — safe on all Android GL backends.
      */
-    private fun drawHearts(x: Float, y: Float, lives: Int) {
-        val heartChar = "\u2665" // ♥
+    private fun drawHeartsShape(x: Float, y: Float, lives: Int) {
+        val heartSize = 10f
+        val gap = heartSpacing
 
-        // Use Space font at fixed scale for hearts
-        spaceFont.data.setScale(1.2f)
+        for (i in 0 until 3) {
+            val hx = x + i * gap
+            val hy = y - heartSize
 
-        // Filled hearts (red)
-        spaceFont.color = Color(1f, 0.2f, 0.3f, 0.9f)
-        for (i in 0 until lives.coerceIn(0, 3)) {
-            spaceFont.draw(batch, heartChar, x + i * heartSpacing, y)
+            if (i < lives.coerceIn(0, 3)) {
+                // Filled heart (red)
+                shapeRenderer.setColor(1f, 0.2f, 0.3f, 0.9f)
+            } else {
+                // Empty heart (grey)
+                shapeRenderer.setColor(0.3f, 0.3f, 0.3f, 0.4f)
+            }
+
+            // Top-left bump
+            shapeRenderer.circle(hx + heartSize * 0.35f, hy + heartSize * 0.65f, heartSize * 0.35f)
+            // Top-right bump
+            shapeRenderer.circle(hx + heartSize * 0.75f, hy + heartSize * 0.65f, heartSize * 0.35f)
+            // Bottom rect (connects the bumps into a heart shape)
+            shapeRenderer.rect(
+                hx + heartSize * 0.15f, hy,
+                heartSize * 0.8f, heartSize * 0.55f
+            )
         }
-
-        // Empty hearts (grey)
-        spaceFont.color = Color(0.3f, 0.3f, 0.3f, 0.4f)
-        for (i in lives.coerceIn(0, 3) until 3) {
-            spaceFont.draw(batch, heartChar, x + i * heartSpacing, y)
-        }
-
-        spaceFont.data.setScale(1f)
-        spaceFont.color = Color.WHITE
     }
 
     fun dispose() {

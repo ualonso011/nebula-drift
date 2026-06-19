@@ -76,9 +76,10 @@ class DifficultyManager {
         var fighter: Float = 1.0f,
         var frigate: Float = 0.0f,
         var destroyer: Float = 0.0f,
-        var clone: Float = 0.0f
+        var clone: Float = 0.0f,
+        var kamikaze: Float = 0.0f
     ) {
-        val total: Float get() = fighter + frigate + destroyer + clone
+        val total: Float get() = fighter + frigate + destroyer + clone + kamikaze
     }
 
     companion object {
@@ -90,10 +91,11 @@ class DifficultyManager {
          * balanced late-game mix.
          */
         private fun calculateEnemyWeights(progress: Float): EnemyTypeWeights = EnemyTypeWeights(
-            fighter = lerp(1.0f, 0.4f, progress),
-            frigate = lerp(0.0f, 0.3f, progress),
+            fighter = lerp(1.0f, 0.35f, progress),
+            frigate = lerp(0.0f, 0.25f, progress),
             destroyer = lerp(0.0f, 0.2f, progress),
-            clone = lerp(0.0f, 0.1f, progress)
+            clone = lerp(0.0f, 0.1f, progress),
+            kamikaze = lerp(0.0f, 0.1f, progress)
         )
     }
 }

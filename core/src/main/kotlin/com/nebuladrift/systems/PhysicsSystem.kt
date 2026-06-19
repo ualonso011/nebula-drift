@@ -8,6 +8,7 @@ import com.nebuladrift.entities.SpaceDebris
 import com.nebuladrift.entities.enemies.DarkClone
 import com.nebuladrift.entities.enemies.Enemy
 import com.nebuladrift.entities.enemies.EnemyType
+import com.nebuladrift.entities.enemies.Kamikaze
 import com.nebuladrift.util.Constants
 
 /**
@@ -127,11 +128,25 @@ class PhysicsSystem : GameSystem {
                 }
             }
 
-            // Apply difficulty scroll speed to X-velocity
-            enemy.velocity.x = -enemyBaseSpeed(enemy) * multiplier
+            // Kamikaze: move toward player ship
+            if (enemy is Kamikaze && !context.ship.isDestroyed) {
+                val dx = context.ship.position.x - enemy.position.x
+                val dy = context.ship.position.y - enemy.position.y
+                val len = kotlin.math.sqrt(dx * dx + dy * dy).coerceAtLeast(0.01f)
+                enemy.velocity.x = (dx / len) * Constants.ENEMY_KAMIKAZE_SPEED * multiplier
+                enemy.velocity.y = (dy / len) * Constants.ENEMY_KAMIKAZE_SPEED * multiplier
+            } else {
+                // Regular enemies: apply difficulty scroll speed to X-velocity
+                enemy.velocity.x = -enemyBaseSpeed(enemy) * multiplier
+            }
+
             enemy.update(delta)
 
-            if (enemy.position.x < -enemy.radius * 2) {
+            if (enemy.position.x < -enemy.radius * 2 ||
+                enemy.position.x > Constants.WORLD_WIDTH + enemy.radius * 2 ||
+                enemy.position.y < -enemy.radius * 2 ||
+                enemy.position.y > Constants.WORLD_HEIGHT + enemy.radius * 2
+            ) {
                 toRemove.add(enemy)
             }
         }
@@ -145,6 +160,7 @@ class PhysicsSystem : GameSystem {
         EnemyType.MEDIUM_FRIGATE -> Constants.ENEMY_MEDIUM_SPEED
         EnemyType.HEAVY_DESTROYER -> Constants.ENEMY_HEAVY_SPEED
         EnemyType.DARK_CLONE -> Constants.ENEMY_CLONE_SPEED
+        EnemyType.KAMIKAZE -> Constants.ENEMY_KAMIKAZE_SPEED
     }
 
     // ── Astronauts ─────────────────────────────────────────────

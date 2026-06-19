@@ -7,6 +7,7 @@ import com.nebuladrift.entities.enemies.DarkClone
 import com.nebuladrift.entities.enemies.Enemy
 import com.nebuladrift.entities.enemies.EnemyType
 import com.nebuladrift.entities.enemies.HeavyDestroyer
+import com.nebuladrift.entities.enemies.Kamikaze
 import com.nebuladrift.entities.enemies.LightFighter
 import com.nebuladrift.entities.enemies.MediumFrigate
 import com.nebuladrift.util.Constants
@@ -57,6 +58,9 @@ class EnemySpawnSystem : GameSystem {
         if (ship.isDestroyed) return
 
         for (enemy in context.enemies) {
+            // Kamikaze enemies don't shoot
+            if (enemy is Kamikaze) continue
+
             if (enemy is DarkClone) {
                 // DarkClone fires via MirrorSystem — check flag
                 if (enemy.isFiring) {
@@ -82,6 +86,7 @@ class EnemySpawnSystem : GameSystem {
             EnemyType.MEDIUM_FRIGATE -> LaserOwner.MEDIUM_FRIGATE
             EnemyType.HEAVY_DESTROYER -> LaserOwner.HEAVY_DESTROYER
             EnemyType.DARK_CLONE -> LaserOwner.DARK_CLONE
+            EnemyType.KAMIKAZE -> LaserOwner.LIGHT_FIGHTER // fallback (never fires)
         }
 
         // Shoot straight left (toward the player's side)
@@ -91,6 +96,7 @@ class EnemySpawnSystem : GameSystem {
             EnemyType.MEDIUM_FRIGATE -> Constants.ENEMY_MEDIUM_LASER_SPEED to Constants.ENEMY_MEDIUM_LASER_RADIUS
             EnemyType.HEAVY_DESTROYER -> Constants.ENEMY_HEAVY_LASER_SPEED to Constants.ENEMY_HEAVY_LASER_RADIUS
             EnemyType.DARK_CLONE -> Constants.ENEMY_CLONE_LASER_SPEED to Constants.ENEMY_CLONE_LASER_RADIUS
+            EnemyType.KAMIKAZE -> Constants.ENEMY_LIGHT_LASER_SPEED to Constants.ENEMY_LIGHT_LASER_RADIUS // fallback
         }
 
         val laser = Laser(
@@ -111,6 +117,7 @@ class EnemySpawnSystem : GameSystem {
         EnemyType.MEDIUM_FRIGATE -> Constants.ENEMY_MEDIUM_FIRE_COOLDOWN
         EnemyType.HEAVY_DESTROYER -> Constants.ENEMY_HEAVY_FIRE_COOLDOWN
         EnemyType.DARK_CLONE -> Constants.ENEMY_CLONE_FIRE_COOLDOWN
+        EnemyType.KAMIKAZE -> Float.MAX_VALUE // never fires
     }
 
     private fun spawnEnemy(context: GameContext) {
@@ -132,7 +139,8 @@ class EnemySpawnSystem : GameSystem {
             roll < weights.fighter -> EnemyType.LIGHT_FIGHTER
             roll < weights.fighter + weights.frigate -> EnemyType.MEDIUM_FRIGATE
             roll < weights.fighter + weights.frigate + weights.destroyer -> EnemyType.HEAVY_DESTROYER
-            else -> EnemyType.DARK_CLONE
+            roll < weights.fighter + weights.frigate + weights.destroyer + weights.clone -> EnemyType.DARK_CLONE
+            else -> EnemyType.KAMIKAZE
         }
 
         val x = Constants.WORLD_WIDTH + 1f
@@ -144,6 +152,7 @@ class EnemySpawnSystem : GameSystem {
             EnemyType.MEDIUM_FRIGATE -> MediumFrigate(position)
             EnemyType.HEAVY_DESTROYER -> HeavyDestroyer(position)
             EnemyType.DARK_CLONE -> DarkClone(position)
+            EnemyType.KAMIKAZE -> Kamikaze(position)
         }
     }
 }
