@@ -9,7 +9,6 @@ import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
 import com.nebuladrift.rendering.FontManager
 import com.nebuladrift.rendering.SpriteGenerator
-import com.nebuladrift.screens.GameOverScreen
 import com.nebuladrift.screens.GameScreen
 import com.nebuladrift.screens.GameSession
 
@@ -19,7 +18,7 @@ import com.nebuladrift.screens.GameSession
  * Extends [NebulaDriftGame] so that [GameScreen] can access the
  * inherited [transition] property. Overrides [create] to set up
  * only the gameplay screen — the Game Over screen is rendered
- * inside libGDX (Scene2D) and only exits to Compose when the
+ * inside GameScreen (Scene2D) and only exits to Compose when the
  * user clicks "Main Menu".
  */
 class GameLoop : NebulaDriftGame() {
@@ -46,23 +45,15 @@ class GameLoop : NebulaDriftGame() {
 
         transitionBatch = SpriteBatch()
 
-        // Create GameOverScreen FIRST so we can pass it to GameScreen
-        val goScreen = GameOverScreen(
-            game = this,
-            i18n = i18n,
-            onExitToMenu = {
-                GameSession.reset()
-                onExitToMenu?.invoke()
-            },
-        )
-        addScreen(goScreen)
-
-        // Game screen (gameplay) — receives GameOverScreen by reference
+        // Game screen (gameplay) — game-over is rendered inline
         addScreen(GameScreen(
             game = this,
             i18n = i18n,
             atlas = atlas,
-            gameOverScreen = goScreen,
+            onExitToMenu = {
+                GameSession.reset()
+                onExitToMenu?.invoke()
+            },
         ))
 
         setScreen<GameScreen>()

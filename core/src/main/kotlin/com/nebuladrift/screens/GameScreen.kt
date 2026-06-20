@@ -2,11 +2,23 @@ package com.nebuladrift.screens
 
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.InputMultiplexer
+import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.Label
+import com.badlogic.gdx.scenes.scene2d.ui.Skin
+import com.badlogic.gdx.scenes.scene2d.ui.Table
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
+import com.badlogic.gdx.utils.viewport.FitViewport
 import ktx.app.KtxScreen
 import com.nebuladrift.entities.Astronaut
 import com.nebuladrift.entities.Asteroid
@@ -18,12 +30,14 @@ import com.nebuladrift.entities.enemies.Enemy
 import com.nebuladrift.input.GameInputProcessor
 import com.nebuladrift.managers.AudioManager
 import com.nebuladrift.managers.I18nManager
+import com.nebuladrift.managers.LeaderboardManager
 import com.nebuladrift.rendering.CameraSetup
 import com.nebuladrift.rendering.GameRenderer
 import com.nebuladrift.rendering.HudRenderer
 import com.nebuladrift.rendering.ParallaxBackground
 import com.nebuladrift.rendering.ParticleManager
 import com.nebuladrift.rendering.SpriteAtlas
+import com.nebuladrift.rendering.UiSkin
 import com.nebuladrift.systems.AstronautSpawnSystem
 import com.nebuladrift.systems.CollisionSystem
 import com.nebuladrift.systems.DebrisSpawnSystem
@@ -36,24 +50,26 @@ import com.nebuladrift.systems.PhysicsSystem
 import com.nebuladrift.systems.ScoreSystem
 import com.nebuladrift.systems.SpawnSystem
 import com.nebuladrift.util.Constants
-import com.badlogic.gdx.Game as LibGdxGame
+import com.nebuladrift.util.LeaderboardEntry
 import com.nebuladrift.NebulaDriftGame
 
 /**
  * Main gameplay screen.
  *
- * Owns the game entities, systems (physics, collision, spawn, score),
- * input processing, and rendering. Integrates a [HudRenderer] overlay
- * and a [ScoreSystem] for tracking.
- *
- * Transitions to [GameOverScreen] when the ship is destroyed.
+ * Handles both gameplay and the game-over overlay (inline, no screen switch).
+ * When the ship is destroyed the game transitions to a game-over HUD rendered
+ * directly via Scene2D on the same screen.
  */
 class GameScreen(
     private val game: NebulaDriftGame,
     private val i18n: I18nManager,
     private val atlas: SpriteAtlas,
-    /** Reference to the GameOverScreen to show when the ship is destroyed. */
-    private val gameOverScreen: GameOverScreen,
+    /**
+     * Android callback: when the user clicks "Main Menu", the host
+     * Activity finishes (back to Compose menus). Null on desktop —
+     * falls back to the libGDX [MenuScreen].
+     */
+    private val onExitToMenu: (() -> Unit)? = null,
 ) : KtxScreen {
 
     // ── Rendering ─────────────────────────────────────────────
@@ -67,11 +83,22 @@ class GameScreen(
     /** Particle system for explosions, trails, sparkles, and damage. */
     private val particleManager = ParticleManager(atlas).also { it.init() }
 
-    /** Parallax scrolling background (replaces simple background texture). */
+    /** Parallax scrolling background. */
     private val parallaxBackground = ParallaxBackground().also { it.init() }
 
     /** Runtime-generated placeholder background texture (fallback). */
     private val backgroundTexture: Texture by lazy { createBackgroundTexture() }
+
+    // ── Game-over overlay ─────────────────────────────────────
+    private val goCamera = OrthographicCamera()
+    private val goViewport = FitViewport(16f, 9f, goCamera)
+    private val goShapeRenderer = ShapeRenderer()
+    private val goStage = Stage(FitViewport(800f, 450f))
+    private val skin: Skin get() = UiSkin.instance
+    private var isNewRecord = false
+    private var showNameEntry = false
+    private val predefinedNames = listOf("Pilot", "Ace", "Nova", "Stryker", "Vega", "Orion")
+    private val nameEntryButtons = mutableListOf<TextButton>()
 
     // ── Entity state ──────────────────────────────────────────
     private var ship: Ship = freshShip()
@@ -105,7 +132,7 @@ class GameScreen(
     private lateinit var gameInputProcessor: GameInputProcessor
 
     // ── Flow ──────────────────────────────────────────────────
-    /** Whether a game-over transition has already been triggered. */
+    /** Whether a game-over overlay is currently showing. */
     private var gameOverTriggered = false
 
     // ── Lifecycle ─────────────────────────────────────────────
@@ -118,7 +145,6 @@ class GameScreen(
 
         gameInputProcessor = GameInputProcessor(
             onFlap = {
-                // Flappy Bird style: instant upward impulse
                 ship.velocity.y = Constants.SHIP_FLAP_VELOCITY
             },
             onFire = {
@@ -138,21 +164,18 @@ class GameScreen(
     override fun resize(width: Int, height: Int) {
         cameraSetup.resize(width, height)
         hudRenderer.resize(width, height)
+        goStage.viewport.update(width, height, true)
     }
 
     override fun render(delta: Float) {
-        // ── Game-over check ───────────────────────────────────
         if (gameOverTriggered) {
-            // Keep rendering the transition overlay if active;
-            // skip game logic but still let the game-level render pass.
-            if (game.transition == null) return
-            // Clear and let the game-level overlay handle the rest.
-            Gdx.gl.glClearColor(0f, 0f, 0f, 1f)
-            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
+            renderGameOver(delta)
             return
         }
+
         if (ship.isDestroyed) {
             triggerGameOver()
+            renderGameOver(delta)
             return
         }
 
@@ -203,7 +226,7 @@ class GameScreen(
         debrisSpawnSystem.update(delta, context)
         collisionSystem.update(delta, context)
         scoreSystem.update(delta, context)
-        score = context.score   // sync back mutable score
+        score = context.score
 
         // ── Enemy laser cleanup ────────────────────────────────
         context.lasers.removeAll { laser ->
@@ -237,6 +260,194 @@ class GameScreen(
         events.clear()
     }
 
+    // ── Game-over ─────────────────────────────────────────────
+
+    private fun triggerGameOver() {
+        if (gameOverTriggered) return
+        gameOverTriggered = true
+
+        // Persist final stats
+        GameSession.finalScore = score
+        GameSession.finalTime = scoreSystem.elapsedTime
+        GameSession.finalTimeFormatted = scoreSystem.formattedTime
+        GameSession.asteroidsDestroyed = scoreSystem.asteroidsDestroyed
+        GameSession.enemiesDestroyed = scoreSystem.enemiesDestroyed
+        GameSession.astronautsRescued = scoreSystem.astronautsRescued
+        GameSession.astronautsKilled = scoreSystem.astronautsKilled
+
+        // High score check
+        val prefs = Gdx.app.getPreferences("nebula-drift")
+        val highScore = prefs.getInteger("highScore", 0)
+        if (GameSession.finalScore > highScore) {
+            prefs.putInteger("highScore", GameSession.finalScore)
+            prefs.flush()
+            isNewRecord = true
+        }
+
+        if (isNewRecord && LeaderboardManager.isHighScore(GameSession.finalScore)) {
+            showNameEntry = true
+        }
+
+        // Audio
+        AudioManager.stopMusic()
+        AudioManager.playSound(Constants.SFX_GAME_OVER)
+        if (isNewRecord) AudioManager.playSound(Constants.SFX_NEW_RECORD)
+
+        // Build the game-over UI
+        buildGameOverUI()
+
+        // Switch input to game-over stage (no more gameplay input)
+        goCamera.position.set(8f, 4.5f, 0f)
+        Gdx.input.inputProcessor = goStage
+    }
+
+    private fun renderGameOver(delta: Float) {
+        Gdx.gl.glClearColor(0f, 0f, 0.05f, 1f)
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
+
+        goViewport.apply()
+        goCamera.update()
+        goShapeRenderer.projectionMatrix = goCamera.combined
+
+        goShapeRenderer.begin(ShapeType.Filled)
+        goShapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
+        goShapeRenderer.rect(0f, 0f, 16f, 9f)
+        goShapeRenderer.end()
+
+        goStage.act(delta)
+        goStage.draw()
+    }
+
+    private fun buildGameOverUI() {
+        goStage.clear()
+        nameEntryButtons.clear()
+
+        val root = Table()
+        root.setFillParent(true)
+        root.defaults().center()
+
+        // ── Heading ────────────────────────────────────────────
+        val headingLabel = Label(i18n.get("game_over"), skin.get("heading-white", Label.LabelStyle::class.java))
+        headingLabel.color = Color.RED
+        root.add(headingLabel).colspan(2).padTop(30f).row()
+
+        // New record banner
+        if (isNewRecord) {
+            val nrLabel = Label(i18n.get("new_record"), skin.get("small-gold", Label.LabelStyle::class.java))
+            val nrBg = Table()
+            nrBg.setBackground(skin.get("white", com.badlogic.gdx.scenes.scene2d.utils.Drawable::class.java))
+            nrBg.color = Color(0.8f, 0.6f, 0f, 0.25f)
+            nrBg.add(nrLabel).pad(6f, 20f, 6f, 20f)
+            root.add(nrBg).colspan(2).padTop(10f).padBottom(8f).row()
+        }
+
+        // ── Stats ──────────────────────────────────────────────
+        val stats = listOf(
+            "${i18n.get("score")}: ${GameSession.finalScore}",
+            "${i18n.get("time")}: ${GameSession.finalTimeFormatted}",
+            "${i18n.get("asteroids_destroyed")}: ${GameSession.asteroidsDestroyed}",
+            "${i18n.get("enemies_destroyed")}: ${GameSession.enemiesDestroyed}",
+            "${i18n.get("astronauts_rescued")}: ${GameSession.astronautsRescued}"
+        )
+
+        val statsTable = Table()
+        for (line in stats) {
+            statsTable.add(Label(line, skin.get("body-white", Label.LabelStyle::class.java))).padBottom(2f).row()
+        }
+
+        if (GameSession.astronautsKilled > 0) {
+            statsTable.add(Label(
+                "${i18n.get("astronauts_killed")}: ${GameSession.astronautsKilled}",
+                skin.get("body-gray", Label.LabelStyle::class.java)
+            )).padBottom(2f).row()
+        }
+
+        root.add(statsTable).colspan(2).padTop(12f).padBottom(20f).row()
+
+        // ── Name entry ──────────────────────────────────────────
+        if (showNameEntry) {
+            val nameLabel = Label(i18n.get("enter_name"), skin.get("small-gold", Label.LabelStyle::class.java))
+            root.add(nameLabel).colspan(2).padBottom(8f).row()
+
+            val nameGrid = Table()
+            predefinedNames.forEachIndexed { index, name ->
+                val btn = TextButton(name, skin.get("small-btn", TextButton.TextButtonStyle::class.java))
+                nameEntryButtons.add(btn)
+                val col = index % 3
+                val row = index / 3
+                if (col == 0 && row > 0) nameGrid.row()
+                nameGrid.add(btn).width(120f).height(36f).pad(4f)
+
+                btn.addListener(object : ClickListener() {
+                    override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                        LeaderboardManager.addEntry(
+                            LeaderboardEntry(
+                                name = name,
+                                score = GameSession.finalScore,
+                                time = GameSession.finalTime,
+                                date = java.util.Date().toString()
+                            )
+                        )
+                        showNameEntry = false
+                        rebuildWithoutNameEntry()
+                    }
+                })
+            }
+            root.add(nameGrid).colspan(2).padBottom(16f).row()
+        }
+
+        // ── Action buttons ──────────────────────────────────────
+        val retryBtn = TextButton(i18n.get("retry"), skin.get("default", TextButton.TextButtonStyle::class.java))
+        val menuBtn = TextButton(i18n.get("main_menu"), skin.get("default", TextButton.TextButtonStyle::class.java))
+
+        root.add(retryBtn).colspan(2).width(240f).height(48f).padBottom(8f).row()
+        root.add(menuBtn).colspan(2).width(240f).height(48f).padBottom(12f).row()
+
+        // Leaderboard button (small)
+        val lbBtn = TextButton(i18n.get("leaderboard"), skin.get("small-btn", TextButton.TextButtonStyle::class.java))
+        root.add(lbBtn).colspan(2).width(200f).height(36f).row()
+
+        goStage.addActor(root)
+
+        // ── Listeners ───────────────────────────────────────────
+        retryBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                GameSession.reset()
+                // Reset game-over state and restart game
+                resetGame()
+                isNewRecord = false
+                showNameEntry = false
+                // Re-init input
+                Gdx.input.inputProcessor = inputMultiplexer
+            }
+        })
+        menuBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                GameSession.reset()
+                isNewRecord = false
+                showNameEntry = false
+                gameOverTriggered = false
+                if (onExitToMenu != null) {
+                    // Android: finish Activity, return to Compose menu
+                    onExitToMenu?.invoke()
+                } else {
+                    // Desktop: transition to libGDX MenuScreen
+                    game.startTransition { game.setScreen<MenuScreen>() }
+                }
+            }
+        })
+        lbBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.startTransition { game.setScreen<LeaderboardScreen>() }
+            }
+        })
+    }
+
+    private fun rebuildWithoutNameEntry() {
+        showNameEntry = false
+        buildGameOverUI()
+    }
+
     // ── Actions ───────────────────────────────────────────────
 
     private fun fireLaser() {
@@ -253,29 +464,6 @@ class GameScreen(
         )
         lasers.add(laser)
         events.add(GameEvent.LaserFired(laser))
-    }
-
-    // ── Game-over transition ──────────────────────────────────
-
-    private fun triggerGameOver() {
-        if (gameOverTriggered) return
-        gameOverTriggered = true
-
-        // Persist final stats for GameOverScreen
-        GameSession.finalScore = score
-        GameSession.finalTime = scoreSystem.elapsedTime
-        GameSession.finalTimeFormatted = scoreSystem.formattedTime
-        GameSession.asteroidsDestroyed = scoreSystem.asteroidsDestroyed
-        GameSession.enemiesDestroyed = scoreSystem.enemiesDestroyed
-        GameSession.astronautsRescued = scoreSystem.astronautsRescued
-        GameSession.astronautsKilled = scoreSystem.astronautsKilled
-
-        // Switch to GameOverScreen directly via postRunnable.
-        // We pass the instance directly (not the generic setScreen<T>)
-        // to avoid any type-lookup issues with KtxGame.
-        Gdx.app.postRunnable {
-            (game as LibGdxGame).setScreen(gameOverScreen)
-        }
     }
 
     // ── Helpers ───────────────────────────────────────────────
@@ -302,14 +490,9 @@ class GameScreen(
 
     // ── Placeholder textures ──────────────────────────────────
 
-    /**
-     * Generate a simple dark-space background texture at runtime.
-     * A subtle radial gradient gives depth without requiring an
-     * external image file.
-     */
     private fun createBackgroundTexture(): Texture {
         val width = 256
-        val height = 144 // 16:9
+        val height = 144
         val pixmap = Pixmap(width, height, Pixmap.Format.RGB888)
 
         for (y in 0 until height) {
@@ -318,7 +501,6 @@ class GameScreen(
                 val dy = y - height / 2f
                 val dist = kotlin.math.sqrt(dx * dx + dy * dy).toFloat() /
                     kotlin.math.sqrt((width / 2f) * (width / 2f) + (height / 2f) * (height / 2f)).toFloat()
-                // Dark blue-black gradient: edges darker, centre slightly lighter
                 val brightness = (0.02f + (1f - dist.coerceIn(0f, 1f)) * 0.06f).coerceIn(0f, 1f)
                 val r = (brightness * 10f).toInt().coerceIn(0, 255)
                 val g = (brightness * 15f).toInt().coerceIn(0, 255)
@@ -328,7 +510,6 @@ class GameScreen(
             }
         }
 
-        // Sprinkle a few "stars"
         pixmap.setColor(1f, 1f, 1f, 0.8f)
         for (i in 0 until 40) {
             val sx = (i * 23 + 7) % width
@@ -350,6 +531,8 @@ class GameScreen(
         parallaxBackground.dispose()
         batch.dispose()
         hudRenderer.dispose()
+        goShapeRenderer.dispose()
+        goStage.dispose()
         backgroundTexture.dispose()
     }
 }
