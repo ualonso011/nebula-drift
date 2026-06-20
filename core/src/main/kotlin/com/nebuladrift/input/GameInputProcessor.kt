@@ -23,7 +23,9 @@ import com.badlogic.gdx.InputProcessor
  */
 class GameInputProcessor(
     private val onFlap: () -> Unit,
-    private val onFire: () -> Unit
+    private val onFire: () -> Unit,
+    /** Debug: force game over (key: O). No-op by default. */
+    private val onDebugGameOver: () -> Unit = {},
 ) : InputProcessor {
 
     override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
@@ -61,6 +63,7 @@ class GameInputProcessor(
         when (keycode) {
             Input.Keys.A, Input.Keys.LEFT, Input.Keys.SPACE -> onFlap()
             Input.Keys.UP -> onFire()
+            Input.Keys.O -> onDebugGameOver()
         }
         return true
     }

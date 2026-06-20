@@ -150,6 +150,12 @@ class GameScreen(
             onFire = {
                 fireLaser()
                 justFired = true
+            },
+            onDebugGameOver = {
+                // Force game over for testing (key: O)
+                if (!gameOverTriggered && !ship.isDestroyed) {
+                    ship.destroy()
+                }
             }
         )
 
@@ -294,7 +300,11 @@ class GameScreen(
         if (isNewRecord) AudioManager.playSound(Constants.SFX_NEW_RECORD)
 
         // Build the game-over UI
-        buildGameOverUI()
+        try {
+            buildGameOverUI()
+        } catch (e: Exception) {
+            Gdx.app.error("GameScreen", "Failed to build game-over UI", e)
+        }
 
         // Switch input to game-over stage (no more gameplay input)
         goCamera.position.set(8f, 4.5f, 0f)

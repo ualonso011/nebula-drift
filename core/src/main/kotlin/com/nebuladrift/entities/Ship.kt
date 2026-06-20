@@ -76,6 +76,14 @@ class Ship(
         return true
     }
 
+    /**
+     * Immediately destroy the ship (set lives to 0).
+     * Bypasses invulnerability. Used for debug/testing only.
+     */
+    fun destroy() {
+        lives = 0
+    }
+
     /** Decrement invulnerability timer. Call each frame. */
     private fun updateInvulnerability(delta: Float) {
         if (invulnerabilityTimer > 0f) {
