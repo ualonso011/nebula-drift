@@ -93,7 +93,9 @@ class GameScreen(
     private val goCamera = OrthographicCamera()
     private val goViewport = FitViewport(16f, 9f, goCamera)
     private val goShapeRenderer = ShapeRenderer()
+    private val goBatch = SpriteBatch()
     private val goStage = Stage(FitViewport(800f, 450f))
+    private var gameOverUITimer = 0f
     private val skin: Skin get() = UiSkin.instance
     private var isNewRecord = false
     private var showNameEntry = false
@@ -312,9 +314,12 @@ class GameScreen(
     }
 
     private fun renderGameOver(delta: Float) {
+        gameOverUITimer += delta
+
         Gdx.gl.glClearColor(0f, 0f, 0.05f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
+        // ── Background ──────────────────────────────────────────
         goViewport.apply()
         goCamera.update()
         goShapeRenderer.projectionMatrix = goCamera.combined
@@ -324,8 +329,44 @@ class GameScreen(
         goShapeRenderer.rect(0f, 0f, 16f, 9f)
         goShapeRenderer.end()
 
-        goStage.act(delta)
-        goStage.draw()
+        // ── Fallback: render text directly using SpriteBatch + BitmapFont ──
+        // This guarantees something visible even if the Stage fails.
+        goBatch.projectionMatrix = goCamera.combined
+        goBatch.begin()
+
+        val goFont = com.nebuladrift.rendering.FontManager.heading()
+        goFont.data.setScale(0.8f)
+        goFont.color = Color.RED
+        goFont.draw(goBatch, i18n.get("game_over"), 3f, 7f)
+        goFont.data.setScale(1f)
+        goFont.color = Color.WHITE
+
+        val bodyFont = com.nebuladrift.rendering.FontManager.body()
+        bodyFont.data.setScale(0.5f)
+        var yPos = 6f
+        val stats = listOf(
+            "${i18n.get("score")}: ${GameSession.finalScore}",
+            "${i18n.get("time")}: ${GameSession.finalTimeFormatted}",
+            "${i18n.get("asteroids_destroyed")}: ${GameSession.asteroidsDestroyed}",
+            "${i18n.get("enemies_destroyed")}: ${GameSession.enemiesDestroyed}",
+            "${i18n.get("astronauts_rescued")}: ${GameSession.astronautsRescued}"
+        )
+        for (line in stats) {
+            bodyFont.draw(goBatch, line, 3f, yPos)
+            yPos -= 0.5f
+        }
+        bodyFont.data.setScale(1f)
+
+        goBatch.end()
+
+        // ── Scene2D UI (Stage) ────────────────────────────────────
+        // This may fail silently if the skin wasn't built correctly.
+        try {
+            goStage.act(delta)
+            goStage.draw()
+        } catch (e: Exception) {
+            Gdx.app.error("GameScreen", "Stage draw failed", e)
+        }
     }
 
     private fun buildGameOverUI() {
@@ -542,6 +583,7 @@ class GameScreen(
         batch.dispose()
         hudRenderer.dispose()
         goShapeRenderer.dispose()
+        goBatch.dispose()
         goStage.dispose()
         backgroundTexture.dispose()
     }
