@@ -77,6 +77,8 @@ object AudioManager {
         loadSound(Constants.SFX_DAMAGE)
         loadSound(Constants.SFX_GAME_OVER)
         loadSound(Constants.SFX_NEW_RECORD)
+        loadSound(Constants.SFX_LASER_CLASH)
+        loadSound(Constants.SFX_REPAIR)
     }
 
     /**
@@ -217,6 +219,9 @@ object AudioManager {
                 is GameEvent.ShipDestroyed -> playSound(Constants.SFX_EXPLOSION_LARGE)
                 is GameEvent.ShipHit -> playSound(Constants.SFX_DAMAGE)
                 is GameEvent.AstronautRescued -> playSound(Constants.SFX_RESCUE)
+                is GameEvent.EnemyDestroyed -> playSound(Constants.SFX_EXPLOSION_SMALL)
+                is GameEvent.LaserLaserHit -> playSound(Constants.SFX_LASER_CLASH)
+                is GameEvent.DebrisCollected -> playSound(Constants.SFX_REPAIR)
                 else -> { /* No audio feedback for other events */ }
             }
         }

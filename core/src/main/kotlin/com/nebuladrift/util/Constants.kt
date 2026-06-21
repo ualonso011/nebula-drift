@@ -251,6 +251,8 @@ object Constants {
     const val SFX_DAMAGE = "sfx/damage.wav"
     const val SFX_GAME_OVER = "sfx/game_over.wav"
     const val SFX_NEW_RECORD = "sfx/new_record.wav"
+    const val SFX_LASER_CLASH = "sfx/laser_clash.wav"
+    const val SFX_REPAIR = "sfx/repair.wav"
 
     // ── Screen Transition ───────────────────────────────────────
     /** Duration of each fade half (fade-out or fade-in) in seconds. */
