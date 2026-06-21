@@ -276,25 +276,13 @@ object Constants {
 
     // ── Planet System ─────────────────────────────────────────
     /** Planet texture size in pixels. */
-    const val PLANET_TEXTURE_SIZE = 256
+    const val PLANET_TEXTURE_SIZE = 128
 
     /** Minimum planet radius in world units. */
     const val PLANET_MIN_RADIUS = 1.5f
 
     /** Maximum planet radius in world units. */
     const val PLANET_MAX_RADIUS = 3.0f
-
-    /** Slowest planet scroll multiplier. */
-    const val PLANET_SCROLL_MIN = 0.06f
-
-    /** Fastest planet scroll multiplier. */
-    const val PLANET_SCROLL_MAX = 0.15f
-
-    /** Base planet spawn interval (seconds). Jitter adds ±5s. */
-    const val PLANET_SPAWN_INTERVAL = 25f
-
-    /** Maximum planets visible at once. */
-    const val PLANET_MAX_COUNT = 2
 
     // ── Astronaut Animation ─────────────────────────────────────
     /** Duration of the death fade-out animation (seconds). */

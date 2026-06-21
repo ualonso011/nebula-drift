@@ -10,7 +10,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Generates procedural planet textures at [PLANET_TEXTURE_SIZE].
+ * Generates procedural planet textures at [com.nebuladrift.util.Constants.PLANET_TEXTURE_SIZE].
  *
  * Each generator returns a [Pixmap]; call [createTexture] to convert
  * to a GPU [Texture] and release the pixmap.

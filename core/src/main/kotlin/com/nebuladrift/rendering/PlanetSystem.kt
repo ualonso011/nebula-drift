@@ -6,13 +6,23 @@ import com.nebuladrift.util.Constants
 import kotlin.random.Random
 
 /**
- * Manages decorative planet lifecycle: spawn, scroll, despawn, and render.
+ * Parallax planet layer — planets scroll continuously as part of the background.
  *
- * Planets are purely visual — no collision, no gameplay interaction.
- * They drift from right to left at a slow parallax rate between the star
- * and nebula background layers.
+ * Unlike timer-based spawn/despawn, this maintains N fixed planet "slots"
+ * that are always visible. When a planet scrolls off the left edge, it
+ * wraps around to the right with a new random type, size, and Y position.
+ * The scroll speed is between the star and nebula parallax layers so
+ * planets feel like mid-ground background elements.
  */
 class PlanetSystem {
+
+    companion object {
+        /** Number of planet slots always visible. */
+        private const val SLOT_COUNT = 3
+
+        /** Planet scroll speed multiplier (between star 0.1 and nebula 0.3). */
+        private const val SCROLL_SPEED = 0.2f
+    }
 
     // ── Texture cache ─────────────────────────────────────────
     private var gasGiantTex: Texture? = null
@@ -22,59 +32,55 @@ class PlanetSystem {
     // ── Active planets ────────────────────────────────────────
     private val planets = mutableListOf<Planet>()
 
-    // ── Spawn timer ───────────────────────────────────────────
-    /** Timer counting up; when >= interval, spawn a planet. */
-    private var spawnTimer = 0f
-
-    /** Random generator (declared BEFORE nextInterval to avoid NPE in jitter()). */
     private val rng = Random(System.nanoTime())
 
-    /** Next spawn interval with jitter applied. */
-    private var nextInterval = Constants.PLANET_SPAWN_INTERVAL + jitter()
-
-    /** Track last type spawned to avoid repeats. */
-    private var lastType: PlanetType? = null
-
-    /** World width used for spawn/despawn calculations. */
+    /** World dimensions. */
     private var worldWidth = Constants.WORLD_WIDTH
-    /** World height used for spawn Y calculation. */
     private var worldHeight = Constants.WORLD_HEIGHT
 
-    /** Pre-generate all planet textures. Idempotent — safe to call multiple times. */
+    /** Pre-generate all planet textures and seed initial planet slots. */
     fun init() {
         if (gasGiantTex != null) return // already initialised
+
         gasGiantTex = PlanetGenerator.createTexture(PlanetGenerator.generateGasGiant())
         rockyTex = PlanetGenerator.createTexture(PlanetGenerator.generateRocky())
         ringedTex = PlanetGenerator.createTexture(PlanetGenerator.generateRinged())
+
+        // Seed initial planets spread across the world
+        val halfWorld = worldWidth / 2f
+        val spacing = worldWidth / SLOT_COUNT
+        for (i in 0 until SLOT_COUNT) {
+            val planet = createRandomPlanet()
+            planet.worldX = -halfWorld + spacing / 2f + i * spacing
+            planets.add(planet)
+        }
     }
 
-    /** Update planet positions, timer, and spawn logic. */
+    /** Scroll all planets. When one exits left, wrap to the right. */
     fun update(delta: Float, baseScrollSpeed: Float) {
-        // ── Spawn timer ──
-        spawnTimer += delta
-        if (spawnTimer >= nextInterval && planets.size < Constants.PLANET_MAX_COUNT) {
-            spawnTimer = 0f
-            nextInterval = Constants.PLANET_SPAWN_INTERVAL + jitter()
-            spawnPlanet()
-        }
-
-        // ── Scroll planets left ──
         val halfWorld = worldWidth / 2f
-        val iterator = planets.iterator()
-        while (iterator.hasNext()) {
-            val planet = iterator.next()
-            planet.worldX -= baseScrollSpeed * planet.scrollSpeed * delta * 60f * 0.5f
+        val scrollAmount = baseScrollSpeed * SCROLL_SPEED * delta * 60f * 0.5f
 
-            // Despawn when fully off-screen left
+        for (i in planets.indices) {
+            val planet = planets[i]
+            planet.worldX -= scrollAmount
+
+            // Wrap to the right when fully off-screen left
             if (planet.worldX + planet.radius < -halfWorld) {
-                iterator.remove()
+                planets[i] = createRandomPlanet().also {
+                    it.worldX = halfWorld + it.radius  // off-screen right
+                }
             }
         }
     }
 
     /** Render all active planets. */
     fun render(batch: SpriteBatch) {
-        for (planet in planets) {
+        val halfWorld = worldWidth / 2f
+
+        // Sort by type depth: larger planets behind smaller ones
+        val sorted = planets.sortedBy { it.radius }
+        for (planet in sorted) {
             val r = planet.radius
             batch.draw(
                 planet.texture,
@@ -86,12 +92,19 @@ class PlanetSystem {
         }
     }
 
-    /** Clear all planets for game restart. */
+    /** Clear and re-seed planets for game restart. */
     fun reset() {
         planets.clear()
-        spawnTimer = 0f
-        nextInterval = Constants.PLANET_SPAWN_INTERVAL + jitter()
-        lastType = null
+        // Re-seed
+        if (gasGiantTex != null) {
+            val halfWorld = worldWidth / 2f
+            val spacing = worldWidth / SLOT_COUNT
+            for (i in 0 until SLOT_COUNT) {
+                val planet = createRandomPlanet()
+                planet.worldX = -halfWorld + spacing / 2f + i * spacing
+                planets.add(planet)
+            }
+        }
     }
 
     /** Dispose all cached textures. */
@@ -107,17 +120,18 @@ class PlanetSystem {
 
     // ── Internal ──────────────────────────────────────────────
 
-    private fun spawnPlanet() {
-        // Pick type (no repeat of last)
-        val available = PlanetType.entries.filter { it != lastType }
-        val type = available.random(rng)
-        lastType = type
+    /**
+     * Create a new planet with random type, size, and Y position.
+     * worldX is NOT set here — caller positions it.
+     */
+    private fun createRandomPlanet(): Planet {
+        val type = PlanetType.entries.random(rng)
 
         val texture = when (type) {
             PlanetType.GAS_GIANT -> gasGiantTex
             PlanetType.ROCKY -> rockyTex
             PlanetType.RINGED -> ringedTex
-        } ?: return
+        } ?: error("PlanetSystem.init() must be called before creating planets")
 
         val radius = when (type) {
             PlanetType.GAS_GIANT -> rng.nextFloat() * 0.5f + 2.5f  // 2.5–3.0
@@ -125,28 +139,19 @@ class PlanetSystem {
             PlanetType.RINGED -> rng.nextFloat() * 0.5f + 2.0f    // 2.0–2.5
         }
 
-        val halfWorld = worldWidth / 2f
         val halfHeight = worldHeight / 2f
-
         // Y: middle 60% of screen height
         val yMin = halfHeight * 0.2f
         val yMax = halfHeight * 1.8f
         val worldY = yMin + rng.nextFloat() * (yMax - yMin)
 
-        // Spawn off-screen right
-        val worldX = halfWorld + radius
-
-        val scrollSpeed = rng.nextFloat() * (Constants.PLANET_SCROLL_MAX - Constants.PLANET_SCROLL_MIN) + Constants.PLANET_SCROLL_MIN
-
-        planets.add(Planet(
+        return Planet(
             texture = texture,
-            worldX = worldX,
+            worldX = 0f,  // caller positions
             worldY = worldY,
             radius = radius,
-            scrollSpeed = scrollSpeed,
+            scrollSpeed = SCROLL_SPEED,
             type = type
-        ))
+        )
     }
-
-    private fun jitter(): Float = rng.nextFloat() * 10f - 5f  // ±5s
 }
