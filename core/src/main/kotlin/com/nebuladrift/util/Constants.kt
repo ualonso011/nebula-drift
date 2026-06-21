@@ -162,7 +162,7 @@ object Constants {
     const val DEBRIS_SPEED = 0.5f
 
     /** Debris collision radius. */
-    const val DEBRIS_RADIUS = 0.15f
+    const val DEBRIS_RADIUS = 0.3f
 
     /** Speed of the glow phase oscillation (radians/s). */
     const val DEBRIS_GLOW_SPEED = 3f
