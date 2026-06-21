@@ -319,11 +319,39 @@ class GameScreen(
     private fun renderGameOver(delta: Float) {
         gameOverUITimer += delta
 
-        // Clear to RED so we KNOW it's this function running
-        Gdx.gl.glClearColor(1f, 0f, 0f, 1f)
+        // ── Clear ────────────────────────────────────────────────
+        Gdx.gl.glClearColor(0f, 0f, 0.04f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        // Draw the Scene2D Stage
+        // ── Background (world coords, like MenuScreen) ───────────
+        goViewport.apply()
+        goCamera.update()
+        goShapeRenderer.projectionMatrix = goCamera.combined
+        goShapeRenderer.begin(ShapeType.Filled)
+        goShapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
+        goShapeRenderer.rect(0f, 0f, 16f, 9f)
+        goShapeRenderer.end()
+
+        // ── "GAME OVER" title in screen-pixel coords (like MenuScreen.renderTitleText) ──
+        val screenW = Gdx.graphics.width.toFloat()
+        val screenH = Gdx.graphics.height.toFloat()
+        goTextCamera.setToOrtho(false, screenW, screenH)
+        goBatch.projectionMatrix = goTextCamera.combined
+        goBatch.begin()
+
+        val headingFont = com.nebuladrift.rendering.FontManager.heading()
+        headingFont.data.setScale(2f)
+        headingFont.color = Color.RED
+        val heading = i18n.get("game_over")
+        val headingLayout = com.badlogic.gdx.graphics.g2d.GlyphLayout(headingFont, heading)
+        val headingX = (screenW - headingLayout.width) / 2f
+        headingFont.draw(goBatch, heading, headingX, screenH * 0.65f)
+        headingFont.data.setScale(1f)
+        headingFont.color = Color.WHITE
+
+        goBatch.end()
+
+        // ── Scene2D Stage ────────────────────────────────────────
         goStage.act(delta)
         goStage.draw()
     }
