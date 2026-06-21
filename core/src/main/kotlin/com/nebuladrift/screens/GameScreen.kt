@@ -319,39 +319,20 @@ class GameScreen(
     private fun renderGameOver(delta: Float) {
         gameOverUITimer += delta
 
-        // ── Clear ────────────────────────────────────────────────
-        Gdx.gl.glClearColor(0f, 0f, 0.04f, 1f)
+        // Clear to a slightly visible dark blue
+        Gdx.gl.glClearColor(0f, 0f, 0.08f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        // ── Background (world coords, like MenuScreen) ───────────
+        // TEST: ShapeRenderer only — does this break Stage?
         goViewport.apply()
         goCamera.update()
         goShapeRenderer.projectionMatrix = goCamera.combined
         goShapeRenderer.begin(ShapeType.Filled)
-        goShapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
+        goShapeRenderer.color = Color(0f, 0f, 0.08f, 1f)
         goShapeRenderer.rect(0f, 0f, 16f, 9f)
         goShapeRenderer.end()
 
-        // ── "GAME OVER" title in screen-pixel coords (like MenuScreen.renderTitleText) ──
-        val screenW = Gdx.graphics.width.toFloat()
-        val screenH = Gdx.graphics.height.toFloat()
-        goTextCamera.setToOrtho(false, screenW, screenH)
-        goBatch.projectionMatrix = goTextCamera.combined
-        goBatch.begin()
-
-        val headingFont = com.nebuladrift.rendering.FontManager.heading()
-        headingFont.data.setScale(2f)
-        headingFont.color = Color.RED
-        val heading = i18n.get("game_over")
-        val headingLayout = com.badlogic.gdx.graphics.g2d.GlyphLayout(headingFont, heading)
-        val headingX = (screenW - headingLayout.width) / 2f
-        headingFont.draw(goBatch, heading, headingX, screenH * 0.65f)
-        headingFont.data.setScale(1f)
-        headingFont.color = Color.WHITE
-
-        goBatch.end()
-
-        // ── Scene2D Stage ────────────────────────────────────────
+        // Stage (previously worked on RED clear)
         goStage.act(delta)
         goStage.draw()
     }
