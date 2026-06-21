@@ -48,6 +48,9 @@ class GameRenderer(
     /** Parallax background (optional, replaces simple backgroundTexture). */
     var parallaxBackground: ParallaxBackground? = null
 
+    /** Decorative planet system (rendered between background and entities). */
+    var planetSystem: PlanetSystem? = null
+
     /**
      * Render all entities for the current frame.
      *
@@ -59,6 +62,7 @@ class GameRenderer(
         batch.begin()
 
         renderBackground()
+        planetSystem?.render(batch)
         renderDebris(context)
         renderAstronauts(context)
         renderAsteroids(context)
