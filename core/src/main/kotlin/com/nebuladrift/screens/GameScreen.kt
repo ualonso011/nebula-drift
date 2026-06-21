@@ -91,7 +91,7 @@ class GameScreen(
     private val parallaxBackground = ParallaxBackground().also { it.init() }
 
     /** Decorative planet system (background parallax bodies). */
-    private val planetSystem = PlanetSystem().also { it.init() }
+    private val planetSystem = PlanetSystem()
 
     /** Runtime-generated placeholder background texture (fallback). */
     private val backgroundTexture: Texture by lazy { createBackgroundTexture() }
@@ -152,6 +152,7 @@ class GameScreen(
 
     override fun show() {
         resetGame()
+        planetSystem.init()
 
         // Notify HUD of current screen size
         hudRenderer.resize(Gdx.graphics.width, Gdx.graphics.height)

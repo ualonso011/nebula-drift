@@ -10,16 +10,21 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Generates procedural planet textures.
+ * Generates procedural planet textures at [PLANET_TEXTURE_SIZE].
  *
- * Each function returns a [Pixmap] sized [Constants.PLANET_TEXTURE_SIZE].
- * Use [createTexture] to convert to a GPU [Texture].
+ * Each generator returns a [Pixmap]; call [createTexture] to convert
+ * to a GPU [Texture] and release the pixmap.
+ *
+ * Optimised for mobile — uses [Pixmap.drawLine] and [Pixmap.fillCircle]
+ * instead of pixel-by-pixel [Pixmap.drawPixel] to avoid ANR on Android.
  */
 object PlanetGenerator {
 
-    private val rng = Random(42) // fixed seed for reproducibility
+    /** Resolution for planet textures. 128 is fast on mobile, still crisp at game scale. */
+    private const val TEX_SIZE = 128
 
-    /** Convert a pixmap to a GPU texture and dispose the pixmap. */
+    private val rng = Random(42)
+
     fun createTexture(pixmap: Pixmap): Texture {
         val tex = Texture(pixmap)
         pixmap.dispose()
@@ -29,11 +34,11 @@ object PlanetGenerator {
     // ── Gas Giant ─────────────────────────────────────────────
 
     /**
-     * Horizontal colour bands with soft gradients, like Jupiter/Saturn.
-     * Palette: warm orange/brown/tan tones.
+     * Horizontal colour bands (Jupiter/Saturn style) using [drawLine]
+     * for efficient per-row drawing.
      */
     fun generateGasGiant(): Pixmap {
-        val s = Constants.PLANET_TEXTURE_SIZE
+        val s = TEX_SIZE
         val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
         pix.setColor(0f, 0f, 0f, 0f)
         pix.fill()
@@ -42,35 +47,22 @@ object PlanetGenerator {
         val cy = s / 2f
         val r = s * 0.42f
 
-        // Clip to circle (clear outside)
-        pix.setColor(0f, 0f, 0f, 0f)
-        for (y in 0 until s) {
-            for (x in 0 until s) {
-                val dx = x - cx
-                val dy = y - cy
-                if (dx * dx + dy * dy > r * r) {
-                    pix.drawPixel(x, y)
-                }
-            }
-        }
-
-        // Band colors as RGB triples (no nesting — flat list)
-        val bandRgb = listOf(
-            listOf(0.6f, 0.4f, 0.2f),   // brown
-            listOf(0.8f, 0.6f, 0.3f),   // tan
-            listOf(0.7f, 0.5f, 0.25f),  // light brown
-            listOf(0.5f, 0.35f, 0.15f), // dark brown
-            listOf(0.75f, 0.55f, 0.3f), // golden tan
-            listOf(0.6f, 0.45f, 0.2f),  // medium brown
-            listOf(0.7f, 0.5f, 0.25f),  // tan
-            listOf(0.55f, 0.4f, 0.2f),  // brown
+        // Band colours: (r, g, b) per band row
+        val bands = listOf(
+            listOf(0.60f, 0.40f, 0.20f),
+            listOf(0.80f, 0.60f, 0.30f),
+            listOf(0.70f, 0.50f, 0.25f),
+            listOf(0.50f, 0.35f, 0.15f),
+            listOf(0.75f, 0.55f, 0.30f),
+            listOf(0.60f, 0.45f, 0.20f),
+            listOf(0.70f, 0.50f, 0.25f),
+            listOf(0.55f, 0.40f, 0.20f),
         )
-
-        // Band positions (normalised Y offsets from center)
         val bandCenters = listOf(-0.6f, -0.4f, -0.2f, 0.0f, 0.2f, 0.4f, 0.6f, 0.8f)
 
+        // Draw each row as a horizontal line (much faster than per-pixel)
         for (y in 0 until s) {
-            val ny = (y - cy) / r  // normalised -1..1
+            val ny = (y - cy) / r
             if (ny * ny > 1f) continue
 
             // Find nearest band
@@ -78,43 +70,32 @@ object PlanetGenerator {
             var bestIdx = 0
             for (i in bandCenters.indices) {
                 val d = kotlin.math.abs(ny - bandCenters[i])
-                if (d < bestDist) {
-                    bestDist = d
-                    bestIdx = i
-                }
+                if (d < bestDist) { bestDist = d; bestIdx = i }
             }
 
-            // Slight noise for texture
-            val noise = (rng.nextFloat() - 0.5f) * 0.08f
+            val rgb = bands[bestIdx]
+            val noise = (rng.nextFloat() - 0.5f) * 0.1f
+            val rr = (rgb[0] + noise).coerceIn(0f, 1f)
+            val gg = (rgb[1] + noise).coerceIn(0f, 1f)
+            val bb = (rgb[2] + noise).coerceIn(0f, 1f)
 
-            // Interpolate between band color and neighbor
-            val rgb = bandRgb[bestIdx]
-            val cr = rgb[0] + noise
-            val cg = rgb[1] + noise
-            val cb = rgb[2] + noise
+            // Edge fade alpha
+            val alpha = (1f - ny * ny).coerceIn(0.3f, 1f)
 
-            val alpha = (1f - ny * ny).coerceIn(0.3f, 1f) // edge fade
+            pix.setColor(rr, gg, bb, alpha)
 
-            for (x in 0 until s) {
-                val dx = x - cx
-                if (dx * dx + ny * ny * r * r > r * r) continue
-                // Per-pixel noise
-                val pxNoise = (rng.nextFloat() - 0.5f) * 0.03f
-                pix.setColor(
-                    (cr + pxNoise).coerceIn(0f, 1f),
-                    (cg + pxNoise).coerceIn(0f, 1f),
-                    (cb + pxNoise).coerceIn(0f, 1f),
-                    alpha
-                )
-                pix.drawPixel(x, y)
-            }
+            // Clip line to circle: find x extents for this y
+            val hw = kotlin.math.sqrt((r * r - (y - cy) * (y - cy)).coerceAtLeast(0f))
+            val x1 = (cx - hw).roundToInt().coerceIn(0, s - 1)
+            val x2 = (cx + hw).roundToInt().coerceIn(0, s - 1)
+            if (x2 >= x1) pix.drawLine(x1, y, x2, y)
         }
 
-        // Edge glow (soft atmospheric rim)
-        for (i in 0 until 5) {
+        // Soft edge glow
+        for (i in 0 until 3) {
             val glowR = r + i * 2f
-            val gAlpha = 0.04f * (1f - i / 5f)
-            pix.setColor(0.8f, 0.6f, 0.3f, gAlpha)
+            val ga = 0.06f * (1f - i / 3f)
+            pix.setColor(0.8f, 0.6f, 0.3f, ga)
             pix.drawCircle(cx.roundToInt(), cy.roundToInt(), glowR.roundToInt())
         }
 
@@ -124,11 +105,11 @@ object PlanetGenerator {
     // ── Rocky ─────────────────────────────────────────────────
 
     /**
-     * Irregular cratered surface, gray/brown palette.
-     * Similar to asteroid generation but at larger scale.
+     * Irregular cratered surface using [Pixmap.fillCircle] for cheap
+     * layered drawing. No per-pixel noise — fast on mobile.
      */
     fun generateRocky(): Pixmap {
-        val s = Constants.PLANET_TEXTURE_SIZE
+        val s = TEX_SIZE
         val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
         pix.setColor(0f, 0f, 0f, 0f)
         pix.fill()
@@ -137,11 +118,11 @@ object PlanetGenerator {
         val cy = s / 2f
         val r = s * 0.42f
 
-        // Base body (irregular circle)
+        // Base body
         pix.setColor(0.5f, 0.45f, 0.4f, 1f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), r.roundToInt())
 
-        // Bumps to make it irregular
+        // Bumps for irregular shape
         pix.setColor(0.55f, 0.5f, 0.45f, 1f)
         val bumpAngles = listOf(0.0, 0.8, 1.6, 2.4, 3.2, 4.0, 4.8, 5.6)
         for (angle in bumpAngles) {
@@ -150,66 +131,52 @@ object PlanetGenerator {
             pix.fillCircle(bx, by, (r * 0.3f).roundToInt())
         }
 
-        // Surface noise (per-pixel variation)
-        for (y in 0 until s) {
-            for (x in 0 until s) {
-                val dx = x - cx
-                val dy = y - cy
-                if (dx * dx + dy * dy > r * r) continue
-                val noise = (rng.nextFloat() - 0.5f) * 0.15f
-                val px = pix.getPixel(x, y)
-                val pr = ((px shr 24) and 0xFF) / 255f
-                val pg = ((px shr 16) and 0xFF) / 255f
-                val pb = ((px shr 8) and 0xFF) / 255f
-                pix.setColor(
-                    (pr + noise).coerceIn(0.2f, 0.8f),
-                    (pg + noise).coerceIn(0.2f, 0.7f),
-                    (pb + noise).coerceIn(0.2f, 0.6f),
-                    1f
-                )
-                pix.drawPixel(x, y)
-            }
-        }
-
-        // Craters (dark indents with highlights)
-        // Each entry: (dxOffset, dyOffset, radiusFraction)
-        data class CraterPos(val dx: Float, val dy: Float, val radiusFrac: Float)
+        // Craters: dark fill + light highlight edge
+        data class CrDef(val dx: Float, val dy: Float, val rf: Float)
         val craters = listOf(
-            CraterPos(-0.3f, -0.3f, 0.2f),
-            CraterPos(+0.35f, +0.2f, 0.15f),
-            CraterPos(-0.1f, +0.4f, 0.12f),
-            CraterPos(+0.4f, -0.35f, 0.18f),
-            CraterPos(-0.4f, +0.1f, 0.1f),
+            CrDef(-0.3f, -0.3f, 0.20f),
+            CrDef(+0.35f, +0.2f, 0.15f),
+            CrDef(-0.1f, +0.4f, 0.12f),
+            CrDef(+0.4f, -0.35f, 0.18f),
+            CrDef(-0.4f, +0.1f, 0.10f),
         )
-        for (crater in craters) {
-            val cx2 = (cx + crater.dx * r).roundToInt()
-            val cy2 = (cy + crater.dy * r).roundToInt()
-            val cr = (r * crater.radiusFrac).roundToInt()
-
+        for (c in craters) {
+            val cr = (r * c.rf).roundToInt()
+            val cx2 = (cx + c.dx * r).roundToInt()
+            val cy2 = (cy + c.dy * r).roundToInt()
             // Dark indent
             pix.setColor(0.3f, 0.25f, 0.2f, 0.8f)
             pix.fillCircle(cx2, cy2, cr)
+            // Highlight edge
+            pix.setColor(0.6f, 0.55f, 0.5f, 0.35f)
+            pix.fillCircle((cx2 + cr * 0.15f).roundToInt(), (cy2 - cr * 0.15f).roundToInt(),
+                (cr * 0.6f).roundToInt())
+        }
 
-            // Highlight edge (bottom-right)
-            pix.setColor(0.6f, 0.55f, 0.5f, 0.4f)
-            pix.fillCircle((cx2 + cr * 0.2f).roundToInt(), (cy2 - cr * 0.2f).roundToInt(),
-                (cr * 0.7f).roundToInt())
+        // Quick surface variation: a few light speckle circles
+        pix.setColor(0.6f, 0.55f, 0.5f, 0.3f)
+        for (i in 0 until 12) {
+            val angle = rng.nextFloat() * 2f * PI.toFloat()
+            val dist = rng.nextFloat() * r * 0.7f
+            val sx = (cx + cos(angle) * dist).roundToInt()
+            val sy = (cy + sin(angle) * dist).roundToInt()
+            pix.fillCircle(sx, sy, (r * 0.04f).roundToInt().coerceAtLeast(1))
         }
 
         // Edge fade
-        for (y in 0 until s) {
-            for (x in 0 until s) {
-                val dx = x - cx
-                val dy = y - cy
-                val dist = kotlin.math.sqrt((dx * dx + dy * dy).toFloat())
-                if (dist > r * 0.8f && dist < r + 3f) {
-                    val alpha = 1f - ((dist - r * 0.8f) / (r * 0.2f + 3f)).coerceIn(0f, 1f)
-                    val px = pix.getPixel(x, y)
+        for (dy in 0 until s) {
+            for (dx in 0 until s) {
+                val dist = kotlin.math.sqrt(
+                    ((dx - cx) * (dx - cx) + (dy - cy) * (dy - cy)).toFloat()
+                )
+                if (dist > r * 0.85f && dist < r + 2f) {
+                    val px = pix.getPixel(dx, dy)
                     val pr = ((px shr 24) and 0xFF) / 255f
                     val pg = ((px shr 16) and 0xFF) / 255f
                     val pb = ((px shr 8) and 0xFF) / 255f
+                    val alpha = 1f - ((dist - r * 0.85f) / (r * 0.15f + 2f)).coerceIn(0f, 1f)
                     pix.setColor(pr, pg, pb, alpha)
-                    pix.drawPixel(x, y)
+                    pix.drawPixel(dx, dy)
                 }
             }
         }
@@ -220,11 +187,11 @@ object PlanetGenerator {
     // ── Ringed ────────────────────────────────────────────────
 
     /**
-     * Rocky body with a translucent elliptical ring around it.
-     * Ring is gold/tan with partial transparency.
+     * Rocky body with a translucent elliptical ring.
+     * Ring drawn efficiently with horizontal lines (not per-pixel).
      */
     fun generateRinged(): Pixmap {
-        val s = Constants.PLANET_TEXTURE_SIZE
+        val s = TEX_SIZE
         val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
         pix.setColor(0f, 0f, 0f, 0f)
         pix.fill()
@@ -232,104 +199,66 @@ object PlanetGenerator {
         val cx = s / 2f
         val cy = s / 2f
         val bodyR = s * 0.28f
-        val ringOuterR = s * 0.44f
-        val ringInnerR = s * 0.34f
 
-        // ── Body (rocky-style surface) ──
+        // ── Body (simple rocky surface, no per-pixel noise) ──
         pix.setColor(0.6f, 0.55f, 0.45f, 1f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), bodyR.roundToInt())
 
-        // Surface noise on body
-        for (y in 0 until s) {
-            for (x in 0 until s) {
-                val dx = x - cx
-                val dy = y - cy
-                if (dx * dx + dy * dy > bodyR * bodyR) continue
-                val noise = (rng.nextFloat() - 0.5f) * 0.12f
-                val px = pix.getPixel(x, y)
-                val pr = ((px shr 24) and 0xFF) / 255f
-                val pg = ((px shr 16) and 0xFF) / 255f
-                val pb = ((px shr 8) and 0xFF) / 255f
-                pix.setColor(
-                    (pr + noise).coerceIn(0.2f, 0.8f),
-                    (pg + noise).coerceIn(0.2f, 0.7f),
-                    (pb + noise).coerceIn(0.2f, 0.6f),
-                    1f
-                )
-                pix.drawPixel(x, y)
-            }
+        // Speckles
+        pix.setColor(0.7f, 0.65f, 0.5f, 0.4f)
+        for (i in 0 until 8) {
+            val angle = rng.nextFloat() * 2f * PI.toFloat()
+            val dist = rng.nextFloat() * bodyR * 0.6f
+            val sx = (cx + cos(angle) * dist).roundToInt()
+            val sy = (cy + sin(angle) * dist).roundToInt()
+            pix.fillCircle(sx, sy, (bodyR * 0.05f).roundToInt().coerceAtLeast(1))
         }
 
-        // ── Ring (elliptical, drawn behind & in front of body) ──
-        drawRing(pix, cx, cy, ringInnerR, ringOuterR, s)
+        // ── Ring (elliptical, behind body) ──
+        drawRing(pix, cx, cy, s * 0.34f, s * 0.44f, s)
 
         return pix
     }
 
-    /**
-     * Draw an elliptical ring using horizontal scanlines.
-     * The ring is gold/tan, semi-transparent, with banding.
-     */
-    private fun drawRing(
-        pix: Pixmap,
-        cx: Float, cy: Float,
-        innerR: Float, outerR: Float,
-        s: Int
-    ) {
-        // Draw ring as concentric ellipses (squashed vertically)
-        val vScale = 0.35f // vertical squash factor
-        val ringRgb = listOf(
-            listOf(0.7f, 0.55f, 0.2f), // gold base
-            listOf(0.8f, 0.65f, 0.3f), // light gold
-            listOf(0.6f, 0.45f, 0.15f), // darker band
+    // ── Ring helper ───────────────────────────────────────────
+
+    /** Draw a squashed elliptical ring using horizontal line spans. */
+    private fun drawRing(pix: Pixmap, cx: Float, cy: Float, innerR: Float, outerR: Float, s: Int) {
+        val vScale = 0.35f
+        val bandColors = listOf(
+            listOf(0.7f, 0.55f, 0.2f),
+            listOf(0.8f, 0.65f, 0.3f),
+            listOf(0.6f, 0.45f, 0.15f),
         )
 
         for (y in 0 until s) {
-            for (x in 0 until s) {
-                val dx = x - cx
-                val dy = (y - cy) / vScale  // unstretch for ellipse check
-                val dist = kotlin.math.sqrt((dx * dx + dy * dy).toFloat())
+            // Un-stretch y-coord for ellipse check
+            val ny = (y - cy) / vScale
 
-                if (dist in innerR..outerR) {
-                    // Ring band pattern
-                    val bandIdx = ((dist / outerR) * ringRgb.size).toInt()
-                        .coerceIn(0, ringRgb.size - 1)
-                    val rgb = ringRgb[bandIdx]
-                    val cr = rgb[0]
-                    val cg = rgb[1]
-                    val cb = rgb[2]
+            // For each row, find x range that falls within ring annulus
+            val hwOuter = kotlin.math.sqrt((outerR * outerR - (ny - cy) * (ny - cy)).coerceAtLeast(0f))
+            val hwInner = if (kotlin.math.abs(ny - cy) < innerR)
+                kotlin.math.sqrt((innerR * innerR - (ny - cy) * (ny - cy)).coerceAtLeast(0f))
+            else 0f
 
-                    // Radial gradient (darker at edges)
-                    val edgeT = ((dist - innerR) / (outerR - innerR)).coerceIn(0f, 1f)
-                    val alpha = (0.4f + 0.3f * sin(PI.toFloat() * edgeT)) * (1f - 0.3f * edgeT)
+            if (hwOuter <= 0f || hwOuter <= hwInner + 0.5f) continue
 
-                    // Subtle noise
-                    val noise = (rng.nextFloat() - 0.5f) * 0.05f
+            val x1 = (cx - hwOuter).roundToInt().coerceIn(0, s - 1)
+            val x2 = (cx - hwInner).roundToInt().coerceIn(0, s - 1)
+            val x3 = (cx + hwInner).roundToInt().coerceIn(0, s - 1)
+            val x4 = (cx + hwOuter).roundToInt().coerceIn(0, s - 1)
 
-                    pix.setColor(
-                        (cr + noise).coerceIn(0f, 1f),
-                        (cg + noise).coerceIn(0f, 1f),
-                        (cb + noise).coerceIn(0f, 1f),
-                        alpha.coerceIn(0f, 1f)
-                    )
-                    pix.drawPixel(x, y)
-                }
-            }
-        }
+            // Radial band & alpha
+            val midDist = (hwOuter + hwInner) / 2f
+            val bandIdx = ((midDist / outerR) * bandColors.size).toInt().coerceIn(0, bandColors.size - 1)
+            val rgb = bandColors[bandIdx]
+            val edgeT = ((midDist - innerR) / (outerR - innerR)).coerceIn(0f, 1f)
+            val alpha = (0.4f + 0.3f * sin(PI.toFloat() * edgeT)) * (1f - 0.3f * edgeT)
 
-        // Outer edge glow on ring
-        for (i in 0 until 4) {
-            val glowR = outerR + i * 1.5f
-            val gAlpha = 0.03f * (1f - i / 4f)
-            pix.setColor(0.8f, 0.6f, 0.2f, gAlpha)
-            for (angle in 0..360 step 5) {
-                val rad = Math.toRadians(angle.toDouble())
-                val gx = (cx + cos(rad) * glowR).roundToInt()
-                val gy = (cy + sin(rad) * glowR * vScale).roundToInt()
-                if (gx in 0 until s && gy in 0 until s) {
-                    pix.drawPixel(gx, gy)
-                }
-            }
+            pix.setColor(rgb[0], rgb[1], rgb[2], alpha.coerceIn(0f, 1f))
+            // Draw left span + right span
+            if (x2 >= x1) pix.drawLine(x1, y, x2, y)
+            if (x4 >= x3) pix.drawLine(x3, y, x4, y)
         }
     }
 }

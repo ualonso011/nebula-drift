@@ -38,8 +38,9 @@ class PlanetSystem {
 
     private val rng = Random(System.nanoTime())
 
-    /** Pre-generate all planet textures. Call once on init. */
+    /** Pre-generate all planet textures. Idempotent — safe to call multiple times. */
     fun init() {
+        if (gasGiantTex != null) return // already initialised
         gasGiantTex = PlanetGenerator.createTexture(PlanetGenerator.generateGasGiant())
         rockyTex = PlanetGenerator.createTexture(PlanetGenerator.generateRocky())
         ringedTex = PlanetGenerator.createTexture(PlanetGenerator.generateRinged())
