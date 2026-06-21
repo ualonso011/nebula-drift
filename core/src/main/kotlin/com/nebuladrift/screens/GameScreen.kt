@@ -316,68 +316,9 @@ class GameScreen(
     }
 
     private fun renderGameOver(delta: Float) {
-        gameOverUITimer += delta
-
-        Gdx.gl.glClearColor(0f, 0f, 0.05f, 1f)
+        Gdx.gl.glClearColor(1f, 0f, 0f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
-
-        // ── Background (world coordinates) ─────────────────────
-        goViewport.apply()
-        goCamera.update()
-        goShapeRenderer.projectionMatrix = goCamera.combined
-
-        goShapeRenderer.begin(ShapeType.Filled)
-        goShapeRenderer.color = Color(0f, 0f, 0.04f, 1f)
-        goShapeRenderer.rect(0f, 0f, 16f, 9f)
-        goShapeRenderer.end()
-
-        // ── Fallback text in SCREEN-PIXEL coordinates ───────────
-        // MenuScreen.renderTitleText uses setToOrtho(false, width, height)
-        // to render text in pixel space — we do the same here.
-        val screenW = Gdx.graphics.width.toFloat()
-        val screenH = Gdx.graphics.height.toFloat()
-        val pixelCam = OrthographicCamera()
-        pixelCam.setToOrtho(false, screenW, screenH)
-
-        goBatch.projectionMatrix = pixelCam.combined
-        goBatch.begin()
-
-        val goFont = com.nebuladrift.rendering.FontManager.heading()
-        goFont.data.setScale(1.5f)
-        goFont.color = Color.RED
-        val heading = i18n.get("game_over")
-        val headingLayout = com.badlogic.gdx.graphics.g2d.GlyphLayout(goFont, heading)
-        val headingX = (screenW - headingLayout.width) / 2f
-        goFont.draw(goBatch, heading, headingX, screenH * 0.7f)
-        goFont.data.setScale(1f)
-        goFont.color = Color.WHITE
-
-        val bodyFont = com.nebuladrift.rendering.FontManager.body()
-        bodyFont.data.setScale(1.2f)
-        var yPos = screenH * 0.55f
-        val stats = listOf(
-            "${i18n.get("score")}: ${GameSession.finalScore}",
-            "${i18n.get("time")}: ${GameSession.finalTimeFormatted}",
-            "${i18n.get("asteroids_destroyed")}: ${GameSession.asteroidsDestroyed}",
-            "${i18n.get("enemies_destroyed")}: ${GameSession.enemiesDestroyed}",
-            "${i18n.get("astronauts_rescued")}: ${GameSession.astronautsRescued}"
-        )
-        for (line in stats) {
-            val layout = com.badlogic.gdx.graphics.g2d.GlyphLayout(bodyFont, line)
-            bodyFont.draw(goBatch, line, (screenW - layout.width) / 2f, yPos)
-            yPos -= bodyFont.lineHeight * 1.5f
-        }
-        bodyFont.data.setScale(1f)
-
-        goBatch.end()
-
-        // ── Scene2D UI (Stage) ────────────────────────────────────
-        try {
-            goStage.act(delta)
-            goStage.draw()
-        } catch (e: Exception) {
-            Gdx.app.error("GameScreen", "Stage draw failed", e)
-        }
+        return
     }
 
     private fun buildGameOverUI() {
