@@ -61,7 +61,7 @@ class PhysicsTest {
     // ── Ship: screen-bounds clamping ─────────────────────────
 
     @Test
-    fun `ship takes damage when falling off bottom`() {
+    fun `ship can fly below screen without damage`() {
         val ship = Ship()
         ship.position.y = -1f // below screen but within death margin
         ship.velocity.y = -5f
@@ -70,9 +70,8 @@ class PhysicsTest {
 
         physicsSystem.update(0.1f, context)
 
-        // Ship should take damage (below screen = damage zone)
-        assertEquals(initialLives - 1, ship.lives, "Ship should lose a life when below screen")
-        // Ship should NOT be destroyed (within death margin)
+        // Ship should NOT take damage (same free zone as above)
+        assertEquals(initialLives, ship.lives, "Ship should NOT lose a life when below screen within margin")
         assertFalse(ship.isDestroyed, "Ship should not be destroyed within death margin")
     }
 

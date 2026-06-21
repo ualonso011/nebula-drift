@@ -56,23 +56,16 @@ class PhysicsSystem : GameSystem {
         )
 
         // ── Vertical death zones ───────────────────────────────
-        // Ship can fly off-screen above/below, but dies if it goes
-        // too far (DEATH_MARGIN beyond the visible area).
+        // Same margin above and below. Ship flies freely off-screen
+        // but dies if it goes too far.
         val deathMargin = Constants.SHIP_DEATH_MARGIN
         if (ship.position.y < -deathMargin || ship.position.y > Constants.WORLD_HEIGHT + deathMargin) {
             ship.destroy()
             return
         }
 
-        // ── Bottom damage zone ─────────────────────────────────
-        // If ship goes below the visible area (but not far enough
-        // to die), deal damage and let the player recover.
-        if (ship.position.y < 0f && ship.position.y >= -deathMargin) {
-            ship.takeDamage()
-        }
-
-        // No vertical clamp — ship can fly above the screen freely
-        // until it hits the death zone.
+        // No vertical clamp — ship can fly above/below the visible
+        // area freely until hitting the death zone.
 
         // Update ship timers (invulnerability)
         ship.update(delta)
