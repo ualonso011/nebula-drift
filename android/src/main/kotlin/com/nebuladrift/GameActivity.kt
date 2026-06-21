@@ -18,6 +18,9 @@ class GameActivity : AndroidApplication() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Install crash handler so errors are shown on screen
+        CrashHandler.install(this)
+
         val config = AndroidApplicationConfiguration().apply {
             useImmersiveMode = true
             useAccelerometer = false
