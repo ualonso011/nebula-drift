@@ -8,16 +8,19 @@ import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.Stage
+import com.badlogic.gdx.scenes.scene2d.ui.Image
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Skin
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
 import com.badlogic.gdx.utils.viewport.FitViewport
 import ktx.app.KtxScreen
 import com.nebuladrift.entities.Astronaut
@@ -99,6 +102,7 @@ class GameScreen(
     /** Stage for Scene2D game-over UI. */
     private val goStage = Stage(FitViewport(800f, 450f))
     private var gameOverUITimer = 0f
+    private var goHeadingLabel: Label? = null
     private val skin: Skin get() = UiSkin.instance
     private var isNewRecord = false
     private var showNameEntry = false
@@ -319,6 +323,10 @@ class GameScreen(
     private fun renderGameOver(delta: Float) {
         gameOverUITimer += delta
 
+        // Pulse heading
+        val pulse = 1.7f + 0.3f * kotlin.math.sin(gameOverUITimer * 2f).toFloat()
+        goHeadingLabel?.setFontScale(pulse)
+
         // Clear to dark blue (same hue as MenuScreen)
         Gdx.gl.glClearColor(0f, 0f, 0.04f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
@@ -331,15 +339,28 @@ class GameScreen(
     private fun buildGameOverUI() {
         goStage.clear()
         nameEntryButtons.clear()
+        goHeadingLabel = null
+
+        // ── Background image (procedural nebula texture, same as game) ──
+        val bg = Image(TextureRegionDrawable(TextureRegion(backgroundTexture)))
+        bg.setFillParent(true)
+        goStage.addActor(bg)
 
         val root = Table()
         root.setFillParent(true)
         root.defaults().center()
 
-        // ── Heading ────────────────────────────────────────────
-        val headingLabel = Label(i18n.get("game_over"), skin.get("heading-white", Label.LabelStyle::class.java))
-        headingLabel.color = Color.RED
-        root.add(headingLabel).colspan(2).padTop(30f).row()
+        // ── "GAME OVER" heading (Orbitron font, like MenuScreen title) ──
+        val headingStyle = Label.LabelStyle(com.nebuladrift.rendering.FontManager.space(), Color.RED)
+        goHeadingLabel = Label(i18n.get("game_over"), headingStyle)
+        goHeadingLabel!!.setFontScale(1.8f)
+        root.add(goHeadingLabel).colspan(2).padTop(40f).row()
+
+        // Decorative line under heading
+        val lineStyle = Label.LabelStyle(com.nebuladrift.rendering.FontManager.space(), Color(0.5f, 0.2f, 0.2f, 0.8f))
+        val lineLabel = Label("━━━━━━━━━━━━━━━━━━━━", lineStyle)
+        lineLabel.setFontScale(0.5f)
+        root.add(lineLabel).colspan(2).padBottom(8f).row()
 
         // New record banner
         if (isNewRecord) {
@@ -413,7 +434,6 @@ class GameScreen(
         root.add(retryBtn).colspan(2).width(240f).height(48f).padBottom(8f).row()
         root.add(menuBtn).colspan(2).width(240f).height(48f).padBottom(12f).row()
 
-        // Leaderboard button (small)
         val lbBtn = TextButton(i18n.get("leaderboard"), skin.get("small-btn", TextButton.TextButtonStyle::class.java))
         root.add(lbBtn).colspan(2).width(200f).height(36f).row()
 
@@ -423,11 +443,9 @@ class GameScreen(
         retryBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 GameSession.reset()
-                // Reset game-over state and restart game
                 resetGame()
                 isNewRecord = false
                 showNameEntry = false
-                // Re-init input
                 Gdx.input.inputProcessor = inputMultiplexer
             }
         })
@@ -438,10 +456,8 @@ class GameScreen(
                 showNameEntry = false
                 gameOverTriggered = false
                 if (onExitToMenu != null) {
-                    // Android: finish Activity, return to Compose menu
                     onExitToMenu?.invoke()
                 } else {
-                    // Desktop: transition to libGDX MenuScreen
                     game.startTransition { game.setScreen<MenuScreen>() }
                 }
             }
