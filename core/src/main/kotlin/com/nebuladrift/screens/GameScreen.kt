@@ -93,7 +93,9 @@ class GameScreen(
     private val goCamera = OrthographicCamera()
     private val goViewport = FitViewport(16f, 9f, goCamera)
     private val goShapeRenderer = ShapeRenderer()
+    /** SpriteBatch for game-over text (screen-pixel coordinates). */
     private val goBatch = SpriteBatch()
+    /** Stage for Scene2D game-over UI. */
     private val goStage = Stage(FitViewport(800f, 450f))
     private var gameOverUITimer = 0f
     private val skin: Skin get() = UiSkin.instance
@@ -319,7 +321,7 @@ class GameScreen(
         Gdx.gl.glClearColor(0f, 0f, 0.05f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        // ── Background ──────────────────────────────────────────
+        // ── Background (world coordinates) ─────────────────────
         goViewport.apply()
         goCamera.update()
         goShapeRenderer.projectionMatrix = goCamera.combined
@@ -329,21 +331,30 @@ class GameScreen(
         goShapeRenderer.rect(0f, 0f, 16f, 9f)
         goShapeRenderer.end()
 
-        // ── Fallback: render text directly using SpriteBatch + BitmapFont ──
-        // This guarantees something visible even if the Stage fails.
-        goBatch.projectionMatrix = goCamera.combined
+        // ── Fallback text in SCREEN-PIXEL coordinates ───────────
+        // MenuScreen.renderTitleText uses setToOrtho(false, width, height)
+        // to render text in pixel space — we do the same here.
+        val screenW = Gdx.graphics.width.toFloat()
+        val screenH = Gdx.graphics.height.toFloat()
+        val pixelCam = OrthographicCamera()
+        pixelCam.setToOrtho(false, screenW, screenH)
+
+        goBatch.projectionMatrix = pixelCam.combined
         goBatch.begin()
 
         val goFont = com.nebuladrift.rendering.FontManager.heading()
-        goFont.data.setScale(0.8f)
+        goFont.data.setScale(1.5f)
         goFont.color = Color.RED
-        goFont.draw(goBatch, i18n.get("game_over"), 3f, 7f)
+        val heading = i18n.get("game_over")
+        val headingLayout = com.badlogic.gdx.graphics.g2d.GlyphLayout(goFont, heading)
+        val headingX = (screenW - headingLayout.width) / 2f
+        goFont.draw(goBatch, heading, headingX, screenH * 0.7f)
         goFont.data.setScale(1f)
         goFont.color = Color.WHITE
 
         val bodyFont = com.nebuladrift.rendering.FontManager.body()
-        bodyFont.data.setScale(0.5f)
-        var yPos = 6f
+        bodyFont.data.setScale(1.2f)
+        var yPos = screenH * 0.55f
         val stats = listOf(
             "${i18n.get("score")}: ${GameSession.finalScore}",
             "${i18n.get("time")}: ${GameSession.finalTimeFormatted}",
@@ -352,15 +363,15 @@ class GameScreen(
             "${i18n.get("astronauts_rescued")}: ${GameSession.astronautsRescued}"
         )
         for (line in stats) {
-            bodyFont.draw(goBatch, line, 3f, yPos)
-            yPos -= 0.5f
+            val layout = com.badlogic.gdx.graphics.g2d.GlyphLayout(bodyFont, line)
+            bodyFont.draw(goBatch, line, (screenW - layout.width) / 2f, yPos)
+            yPos -= bodyFont.lineHeight * 1.5f
         }
         bodyFont.data.setScale(1f)
 
         goBatch.end()
 
         // ── Scene2D UI (Stage) ────────────────────────────────────
-        // This may fail silently if the skin wasn't built correctly.
         try {
             goStage.act(delta)
             goStage.draw()
