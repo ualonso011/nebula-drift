@@ -48,9 +48,6 @@ class GameRenderer(
     /** Parallax background (optional, replaces simple backgroundTexture). */
     var parallaxBackground: ParallaxBackground? = null
 
-    /** Decorative planet system (rendered between background and entities). */
-    var planetSystem: PlanetSystem? = null
-
     /**
      * Render all entities for the current frame.
      *
@@ -62,7 +59,6 @@ class GameRenderer(
         batch.begin()
 
         renderBackground()
-        planetSystem?.render(batch)
         renderDebris(context)
         renderAstronauts(context)
         renderAsteroids(context)
@@ -105,6 +101,32 @@ class GameRenderer(
         val ship = context.ship
         if (ship.isDestroyed) return
 
+        // Engine trail — glowing dots behind the ship (drawn before the ship)
+        val velX = ship.velocity.x
+        val velY = ship.velocity.y
+        val speed = kotlin.math.sqrt((velX * velX + velY * velY).toFloat())
+        if (speed > 0.5f) {
+            val nx = velX / speed
+            val ny = velY / speed
+            val trailCount = 4
+            for (i in 0 until trailCount) {
+                val t = (i + 1).toFloat() / trailCount
+                val dist = t * ship.radius * 2.5f
+                val tx = ship.position.x - nx * dist
+                val ty = ship.position.y - ny * dist
+                val alpha = (1f - t) * 0.5f
+                val pulse = (1f + 0.3f * kotlin.math.sin((stateTime * 15f + i * 2f).toDouble())).toFloat()
+                val size = ship.radius * 0.25f * pulse * (1f - t * 0.5f)
+                batch.color = Color(0.3f, 0.5f, 1f, alpha * pulse)
+                batch.draw(
+                    atlas.findRegion("laser_player_glow"),
+                    tx - size, ty - size,
+                    size * 2f, size * 2f
+                )
+            }
+            batch.color = Color.WHITE
+        }
+
         // Invulnerability blink: skip every other 100ms
         if (ship.isInvulnerable && ((ship.invulnerabilityTimer * 10).toInt() % 2 == 0)) {
             // Blink off
@@ -136,7 +158,8 @@ class GameRenderer(
                 AsteroidSize.MEDIUM -> "medium"
                 AsteroidSize.SMALL  -> "small"
             }
-            val spriteName = "asteroid_${sizeKey}_${asteroid.health}"
+            val typeKey = asteroid.type.name.lowercase()
+            val spriteName = "asteroid_${sizeKey}_${typeKey}_${asteroid.health}"
             val region = atlas.findRegion(spriteName)
             val d = asteroid.radius * 2f
             batch.draw(
@@ -157,7 +180,9 @@ class GameRenderer(
     private fun renderEnemies(context: GameContext) {
         for (enemy in context.enemies) {
             val spriteName = when (enemy.getType()) {
-                EnemyType.LIGHT_FIGHTER -> "enemy_fighter_1"
+                EnemyType.LIGHT_FIGHTER -> {
+                    if (enemy.health >= 2) "enemy_fighter_1" else "enemy_fighter_2"
+                }
                 EnemyType.MEDIUM_FRIGATE -> {
                     when {
                         enemy.health >= 2 -> "enemy_frigate_1"

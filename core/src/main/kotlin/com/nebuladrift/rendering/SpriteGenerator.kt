@@ -121,7 +121,7 @@ object SpriteGenerator {
             map["thrust_$i"] = createThrustSprite(i)
         }
 
-        // Asteroids (3 sizes × HP states)
+        // Asteroids (3 sizes × HP states × 3 mineral types)
         val asteroidDefs = listOf(
             Triple("large", Constants.SPRITE_ASTEROID_LARGE, 3),
             Triple("medium", Constants.SPRITE_ASTEROID_MEDIUM, 2),
@@ -129,12 +129,15 @@ object SpriteGenerator {
         )
         for ((sizeName, sizePx, maxHp) in asteroidDefs) {
             for (hp in 1..maxHp) {
-                map["asteroid_${sizeName}_$hp"] = createAsteroidSprite(sizePx, hp, maxHp)
+                for (type in listOf("rock", "ice", "metal")) {
+                    map["asteroid_${sizeName}_${type}_$hp"] = createAsteroidSprite(sizePx, hp, maxHp, type)
+                }
             }
         }
 
         // Enemies (4 types × damage states)
-        map["enemy_fighter_1"] = createEnemyFighterSprite()
+        map["enemy_fighter_1"] = createEnemyFighterSprite(false)
+        map["enemy_fighter_2"] = createEnemyFighterSprite(true)
         map["enemy_frigate_1"] = createEnemyFrigateSprite(2)
         map["enemy_frigate_2"] = createEnemyFrigateSprite(1)
         map["enemy_destroyer_1"] = createEnemyDestroyerSprite(3)
@@ -316,7 +319,7 @@ object SpriteGenerator {
 
     // ── Asteroid sprite ──────────────────────────────────────────
 
-    private fun createAsteroidSprite(sizePx: Int, hp: Int, maxHp: Int): Pixmap {
+    private fun createAsteroidSprite(sizePx: Int, hp: Int, maxHp: Int, type: String = "rock"): Pixmap {
         val pix = Pixmap(sizePx, sizePx, Pixmap.Format.RGBA8888)
         pix.setColor(0f, 0f, 0f, 0f)
         pix.fill()
@@ -325,13 +328,40 @@ object SpriteGenerator {
         val cy = sizePx / 2f
         val baseRadius = sizePx * 0.4f
 
-        // Base color varies by damage
+        // Base colour palette by type
+        val (baseR, baseG, baseB) = when (type) {
+            "ice"   -> Triple(0.50f, 0.60f, 0.75f) // blue-white
+            "metal" -> Triple(0.55f, 0.55f, 0.60f) // silver-grey
+            else    -> Triple(0.55f, 0.45f, 0.35f) // rock: brown-grey
+        }
+        val (darkR, darkG, darkB) = when (type) {
+            "ice"   -> Triple(0.15f, 0.25f, 0.40f)
+            "metal" -> Triple(0.25f, 0.25f, 0.30f)
+            else    -> Triple(0.20f, 0.15f, 0.12f)
+        }
+        val (lightR, lightG, lightB) = when (type) {
+            "ice"   -> Triple(0.70f, 0.80f, 0.95f)
+            "metal" -> Triple(0.70f, 0.70f, 0.75f)
+            else    -> Triple(0.60f, 0.50f, 0.45f)
+        }
+        val (crackR, crackG, crackB) = when (type) {
+            "ice"   -> Triple(0.80f, 0.85f, 0.95f)
+            "metal" -> Triple(0.10f, 0.10f, 0.12f)
+            else    -> Triple(0.10f, 0.08f, 0.05f)
+        }
+
+        // Damage ratio affects brightness
         val damageRatio = 1f - hp.toFloat() / maxHp.toFloat()
-        val grayBase = 0.6f + damageRatio * 0.25f
+        val damageBright = 1f + damageRatio * 0.25f
         
         // Create irregular shape by drawing multiple overlapping circles
         // Main body
-        pix.setColor(0.55f * grayBase, 0.45f * grayBase, 0.35f * grayBase, 1f)
+        pix.setColor(
+            (baseR * damageBright).coerceIn(0f, 1f),
+            (baseG * damageBright).coerceIn(0f, 1f),
+            (baseB * damageBright).coerceIn(0f, 1f),
+            1f
+        )
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), baseRadius.roundToInt())
         
         // Add irregular bumps around the edge
@@ -344,19 +374,19 @@ object SpriteGenerator {
         }
         
         // Add darker areas for depth (craters/shadows)
-        pix.setColor(0.2f, 0.15f, 0.12f, 0.6f)
-        pix.fillCircle((cx - baseRadius * 0.3f).roundToInt(), (cy - baseRadius * 0.2f).roundToInt(), 
+        pix.setColor(darkR, darkG, darkB, 0.6f)
+        pix.fillCircle((cx - baseRadius * 0.3f).roundToInt(), (cy - baseRadius * 0.2f).roundToInt(),
                         (baseRadius * 0.25f).roundToInt())
-        pix.fillCircle((cx + baseRadius * 0.2f).roundToInt(), (cy + baseRadius * 0.3f).roundToInt(), 
+        pix.fillCircle((cx + baseRadius * 0.2f).roundToInt(), (cy + baseRadius * 0.3f).roundToInt(),
                         (baseRadius * 0.2f).roundToInt())
-        
+
         // Add lighter highlights
-        pix.setColor(0.6f, 0.5f, 0.45f, 0.4f)
+        pix.setColor(lightR, lightG, lightB, 0.4f)
         pix.fillCircle((cx + baseRadius * 0.1f).roundToInt(), (cy - baseRadius * 0.3f).roundToInt(), 
                         (baseRadius * 0.15f).roundToInt())
         
         // Surface detail — random crack lines based on damage
-        pix.setColor(0.1f, 0.08f, 0.05f, 0.5f + damageRatio * 0.3f)
+        pix.setColor(crackR, crackG, crackB, 0.5f + damageRatio * 0.3f)
         val crackCount = (2 + hp).coerceAtLeast(1)
         for (i in 0 until crackCount) {
             val angle = i * 1.8f + 0.3f
@@ -390,7 +420,7 @@ object SpriteGenerator {
 
     // ── Enemy: LightFighter ──────────────────────────────────────
 
-    private fun createEnemyFighterSprite(): Pixmap {
+    private fun createEnemyFighterSprite(damaged: Boolean = false): Pixmap {
         val s = Constants.SPRITE_ENEMY_FIGHTER
         val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
         pix.setColor(0f, 0f, 0f, 0f)
@@ -477,6 +507,31 @@ object SpriteGenerator {
                      (cx - h * 0.3f).roundToInt(), (cy + h * 0.2f).roundToInt())
         pix.drawLine((cx + h * 0.1f).roundToInt(), (cy - h * 0.2f).roundToInt(),
                      (cx + h * 0.1f).roundToInt(), (cy + h * 0.2f).roundToInt())
+
+        // Damage overlay (cracks, scorch marks)
+        if (damaged) {
+            val rng = java.util.Random(42)
+            // Scorch marks
+            pix.setColor(0.15f, 0.05f, 0.05f, 0.5f)
+            pix.fillCircle((cx + rng.nextInt((h * 0.6f).toInt()) - (h * 0.3f).toInt()).roundToInt(),
+                           (cy + rng.nextInt((h * 0.6f).toInt()) - (h * 0.3f).toInt()).roundToInt(),
+                           (h * 0.15f).roundToInt())
+            pix.fillCircle((cx + rng.nextInt((h * 0.8f).toInt()) - (h * 0.4f).toInt()).roundToInt(),
+                           (cy + rng.nextInt((h * 0.4f).toInt()) - (h * 0.2f).toInt()).roundToInt(),
+                           (h * 0.08f).roundToInt())
+            // Crack lines
+            pix.setColor(0.1f, 0.02f, 0.02f, 0.7f)
+            pix.drawLine(
+                (cx - h * 0.4f).roundToInt(), (cy - h * 0.3f).roundToInt(),
+                (cx + h * 0.3f).roundToInt(), (cy + h * 0.1f).roundToInt())
+            pix.drawLine(
+                (cx + h * 0.1f).roundToInt(), (cy + h * 0.4f).roundToInt(),
+                (cx + h * 0.5f).roundToInt(), (cy - h * 0.45f).roundToInt())
+            // Wing scorch
+            pix.setColor(0.25f, 0.05f, 0.05f, 0.4f)
+            pix.fillCircle((cx + h * 0.5f).roundToInt(), (cy - h * 0.6f).roundToInt(),
+                          (h * 0.2f).roundToInt())
+        }
 
         return pix
     }

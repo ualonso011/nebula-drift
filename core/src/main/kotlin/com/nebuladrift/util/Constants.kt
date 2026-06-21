@@ -274,16 +274,6 @@ object Constants {
     /** Number of star dots on the far layer. */
     const val PARALLAX_STAR_COUNT = 120
 
-    // ── Planet System ─────────────────────────────────────────
-    /** Planet texture size in pixels. */
-    const val PLANET_TEXTURE_SIZE = 128
-
-    /** Minimum planet radius in world units. */
-    const val PLANET_MIN_RADIUS = 1.5f
-
-    /** Maximum planet radius in world units. */
-    const val PLANET_MAX_RADIUS = 3.0f
-
     // ── Astronaut Animation ─────────────────────────────────────
     /** Duration of the death fade-out animation (seconds). */
     const val ASTRONAUT_DEATH_FADE_DURATION = 0.5f

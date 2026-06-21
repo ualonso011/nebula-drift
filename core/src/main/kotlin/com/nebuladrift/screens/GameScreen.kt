@@ -39,7 +39,6 @@ import com.nebuladrift.rendering.GameRenderer
 import com.nebuladrift.rendering.HudRenderer
 import com.nebuladrift.rendering.ParallaxBackground
 import com.nebuladrift.rendering.ParticleManager
-import com.nebuladrift.rendering.PlanetSystem
 import com.nebuladrift.rendering.SpriteAtlas
 import com.nebuladrift.rendering.UiSkin
 import com.nebuladrift.systems.AstronautSpawnSystem
@@ -89,9 +88,6 @@ class GameScreen(
 
     /** Parallax scrolling background. */
     private val parallaxBackground = ParallaxBackground().also { it.init() }
-
-    /** Decorative planet system (background parallax bodies). */
-    private val planetSystem = PlanetSystem()
 
     /** Runtime-generated placeholder background texture (fallback). */
     private val backgroundTexture: Texture by lazy { createBackgroundTexture() }
@@ -152,11 +148,6 @@ class GameScreen(
 
     override fun show() {
         resetGame()
-        try {
-            planetSystem.init()
-        } catch (e: Exception) {
-            Gdx.app.error("GameScreen", "PlanetSystem.init() failed", e)
-        }
 
         // Notify HUD of current screen size
         hudRenderer.resize(Gdx.graphics.width, Gdx.graphics.height)
@@ -267,12 +258,8 @@ class GameScreen(
         // ── Update parallax background ────────────────────────
         parallaxBackground.update(delta, difficultyManager.scrollSpeedMultiplier)
 
-        // ── Update planets ────────────────────────────────────
-        planetSystem.update(delta, difficultyManager.scrollSpeedMultiplier)
-
         // ── Render game world via GameRenderer ────────────────
         gameRenderer.parallaxBackground = parallaxBackground
-        gameRenderer.planetSystem = planetSystem
         gameRenderer.backgroundTexture = backgroundTexture
         gameRenderer.render(context, elapsedTime)
 
@@ -525,7 +512,6 @@ class GameScreen(
         scoreSystem.reset()
         mirrorSystem.reset()
         particleManager.clear()
-        planetSystem.reset()
     }
 
     // ── Placeholder textures ──────────────────────────────────
@@ -575,6 +561,5 @@ class GameScreen(
         goBatch.dispose()
         goStage.dispose()
         backgroundTexture.dispose()
-        planetSystem.dispose()
     }
 }

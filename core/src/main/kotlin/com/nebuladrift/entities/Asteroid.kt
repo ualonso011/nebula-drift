@@ -5,6 +5,11 @@ import com.nebuladrift.util.Constants
 import kotlin.random.Random
 
 /**
+ * Asteroid mineral type — affects visual appearance (colour, texture).
+ */
+enum class AsteroidType { ROCK, ICE, METAL }
+
+/**
  * Asteroid size tiers.
  *
  * Each tier defines the starting HP and collision radius.
@@ -25,7 +30,9 @@ enum class AsteroidSize(val hp: Int, val radius: Float) {
 class Asteroid(
     position: Vector2,
     velocity: Vector2,
-    val size: AsteroidSize
+    val size: AsteroidSize,
+    /** Mineral type for visual variation. Random if not specified. */
+    val type: AsteroidType = AsteroidType.entries.random()
 ) : Entity {
 
     override val position: Vector2 = position.cpy()
