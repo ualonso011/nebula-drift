@@ -63,7 +63,16 @@ object SpriteGenerator {
         createAstronautSprite()
 
     internal fun generateDebrisPixmap(): Pixmap =
-        createDebrisSprite()
+        createDebrisGearSprite()
+
+    internal fun generateDebrisGearPixmap(): Pixmap =
+        createDebrisGearSprite()
+
+    internal fun generateDebrisAntennaPixmap(): Pixmap =
+        createDebrisAntennaSprite()
+
+    internal fun generateDebrisPanelPixmap(): Pixmap =
+        createDebrisPanelSprite()
 
     internal fun generateDebrisGlowPixmap(): Pixmap =
         createDebrisGlowSprite()
@@ -139,8 +148,10 @@ object SpriteGenerator {
         map["astro_rescued"] = createAstronautRescuedSprite()
         map["astro_dead"] = createAstronautDeadSprite()
 
-        // Debris
-        map["debris"] = createDebrisSprite()
+        // Debris (3 shape variants)
+        map["debris_gear"] = createDebrisGearSprite()
+        map["debris_antenna"] = createDebrisAntennaSprite()
+        map["debris_panel"] = createDebrisPanelSprite()
         map["debris_glow"] = createDebrisGlowSprite()
 
         // Laser (default yellow — backward compat)
@@ -1050,61 +1061,139 @@ object SpriteGenerator {
         return pix
     }
 
-    // ── Debris sprites ───────────────────────────────────────────
+    // ── Debris sprites (3 variants) ───────────────────────────────
 
-    private fun createDebrisSprite(): Pixmap {
+    /** Gear: metallic circle with teeth and center hole. */
+    private fun createDebrisGearSprite(): Pixmap {
         val s = Constants.SPRITE_DEBRIS
         val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
         pix.setColor(0f, 0f, 0f, 0f)
         pix.fill()
+        val cx = s / 2f; val cy = s / 2f; val r = s * 0.35f
 
-        val cx = s / 2f
-        val cy = s / 2f
-        val r = s * 0.35f
-
-        // ── Broken gear body (gray/silver metal) ──
+        // Main body (dark silver)
         pix.setColor(0.45f, 0.45f, 0.5f, 1f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), r.roundToInt())
 
-        // Gear teeth (broken stubs around the edge)
+        // 8 gear teeth
         pix.setColor(0.4f, 0.4f, 0.45f, 1f)
-        val toothAngles = listOf(0f, 0.8f, 1.6f, 2.4f, 3.2f, 4.0f, 4.8f, 5.6f)
-        for (angle in toothAngles) {
+        for (i in 0 until 8) {
+            val angle = i * kotlin.math.PI.toFloat() / 4f
             val tx = (cx + kotlin.math.cos(angle.toDouble()).toFloat() * r * 0.9f).roundToInt()
             val ty = (cy + kotlin.math.sin(angle.toDouble()).toFloat() * r * 0.9f).roundToInt()
             pix.fillCircle(tx, ty, (r * 0.2f).roundToInt())
         }
 
-        // Gear inner cutout (darker center hole)
+        // Center hole
         pix.setColor(0.2f, 0.2f, 0.25f, 1f)
         pix.fillCircle(cx.roundToInt(), cy.roundToInt(), (r * 0.35f).roundToInt())
 
-        // ── Bent antenna / panel fragment crossing the gear ──
-        pix.setColor(0.6f, 0.6f, 0.55f, 0.9f)
-        pix.fillRectangle((cx - r * 0.8f).roundToInt(), (cy - r * 0.1f).roundToInt(),
-                          (r * 1.6f).roundToInt(), (r * 0.2f).roundToInt())
-        // Broken-off antenna tip
-        pix.setColor(0.5f, 0.5f, 0.45f, 0.8f)
-        fillTriangle(pix,
-            (cx + r * 0.8f).roundToInt(), (cy - r * 0.1f).roundToInt(),
-            (cx + r * 1.2f).roundToInt(), (cy - r * 0.3f).roundToInt(),
-            (cx + r * 0.8f).roundToInt(), (cy + r * 0.1f).roundToInt()
-        )
-
-        // ── Scorch marks (dark patches from explosions) ──
-        pix.setColor(0.1f, 0.08f, 0.05f, 0.7f)
-        pix.fillCircle((cx - r * 0.5f).roundToInt(), (cy + r * 0.3f).roundToInt(), (r * 0.25f).roundToInt())
-        pix.fillCircle((cx + r * 0.4f).roundToInt(), (cy - r * 0.4f).roundToInt(), (r * 0.2f).roundToInt())
-
-        // ── Corrosion spots (green/blue oxidation) ──
-        pix.setColor(0.2f, 0.45f, 0.3f, 0.5f)
-        pix.fillCircle((cx + r * 0.1f).roundToInt(), (cy - r * 0.3f).roundToInt(), (r * 0.12f).roundToInt())
-        pix.setColor(0.3f, 0.3f, 0.55f, 0.4f)
-        pix.fillCircle((cx - r * 0.3f).roundToInt(), (cy - r * 0.5f).roundToInt(), (r * 0.1f).roundToInt())
-
-        // ── Metal highlight (surface reflection) ──
-        pix.setColor(0.7f, 0.7f, 0.75f, 0.35f)
+        // Highlight
+        pix.setColor(0.65f, 0.65f, 0.7f, 0.3f)
         pix.fillCircle((cx + r * 0.15f).roundToInt(), (cy + r * 0.15f).roundToInt(), (r * 0.15f).roundToInt())
+
+        return pix
+    }
+
+    /** Antenna: bent pole with emitter dish on top. */
+    private fun createDebrisAntennaSprite(): Pixmap {
+        val s = Constants.SPRITE_DEBRIS
+        val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
+        pix.setColor(0f, 0f, 0f, 0f)
+        pix.fill()
+        val cx = s / 2f; val cy = s / 2f; val r = s * 0.35f
+        val half = s * 0.4f
+
+        // Main pole (dark gray)
+        pix.setColor(0.5f, 0.5f, 0.55f, 1f)
+        pix.fillRectangle((cx - 2).roundToInt(), (cy - half * 0.8f).roundToInt(), 4, (half * 1.6f).roundToInt())
+
+        // Cross bar (broken satellite arm)
+        pix.setColor(0.45f, 0.45f, 0.5f, 1f)
+        pix.fillRectangle((cx - half * 0.7f).roundToInt(), (cy - 1).roundToInt(), (half * 1.4f).roundToInt(), 3)
+
+        // Dish/reflector (parabolic arc at top)
+        pix.setColor(0.6f, 0.6f, 0.65f, 1f)
+        for (i in -3..3) {
+            val dishX = (cx + i * 4).roundToInt()
+            val dishY = (cy - half * 0.8f + kotlin.math.abs(i).toFloat() * 3f).roundToInt()
+            pix.fillCircle(dishX, dishY, (r * 0.12f).roundToInt())
+        }
+
+        // Dish concave center
+        pix.setColor(0.35f, 0.35f, 0.4f, 1f)
+        pix.fillCircle((cx - r * 0.05f).roundToInt(), (cy - half * 0.75f).roundToInt(), (r * 0.1f).roundToInt())
+
+        // Blinking light at emitter tip (red)
+        pix.setColor(0.9f, 0.15f, 0.1f, 1f)
+        pix.fillCircle((cx - r * 0.1f).roundToInt(), (cy - half * 0.9f).roundToInt(), 3)
+        pix.setColor(1f, 0.3f, 0.2f, 0.5f)
+        pix.fillCircle((cx - r * 0.1f).roundToInt(), (cy - half * 0.9f).roundToInt(), 5)
+
+        // Bolts
+        pix.setColor(0.3f, 0.3f, 0.35f, 1f)
+        pix.fillCircle((cx - half * 0.6f).roundToInt(), (cy + half * 0.4f).roundToInt(), 2)
+        pix.fillCircle((cx + half * 0.6f).roundToInt(), (cy + half * 0.4f).roundToInt(), 2)
+
+        return pix
+    }
+
+    /** Panel: jagged metal fragment with circuit traces. */
+    private fun createDebrisPanelSprite(): Pixmap {
+        val s = Constants.SPRITE_DEBRIS
+        val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
+        pix.setColor(0f, 0f, 0f, 0f)
+        pix.fill()
+        val cx = s / 2f; val cy = s / 2f; val r = s * 0.35f
+        val hw = r * 0.9f; val hh = r * 0.7f
+
+        // Jagged panel body (light gray, pentagonal-ish)
+        pix.setColor(0.55f, 0.55f, 0.6f, 1f)
+        val corners = listOf(
+            (cx - hw).roundToInt() to (cy + hh * 0.5f).roundToInt(),
+            (cx - hw * 0.8f).roundToInt() to (cy - hh).roundToInt(),
+            (cx + hw * 0.3f).roundToInt() to (cy - hh * 0.8f).roundToInt(),
+            (cx + hw).roundToInt() to (cy - hh * 0.3f).roundToInt(),
+            (cx + hw * 0.7f).roundToInt() to (cy + hh * 0.8f).roundToInt()
+        )
+        // Fill polygon via triangles from center
+        for (i in corners.indices) {
+            val (x1, y1) = corners[i]
+            val (x2, y2) = corners[(i + 1) % corners.size]
+            fillTriangle(pix, cx.roundToInt(), cy.roundToInt(), x1, y1, x2, y2)
+        }
+
+        // Circuit traces (green/gold lines)
+        pix.setColor(0.2f, 0.6f, 0.3f, 0.7f)
+        pix.drawLine((cx - hw * 0.5f).roundToInt(), (cy + hh * 0.2f).roundToInt(),
+                     (cx + hw * 0.2f).roundToInt(), (cy + hh * 0.2f).roundToInt())
+        pix.drawLine((cx + hw * 0.2f).roundToInt(), (cy + hh * 0.2f).roundToInt(),
+                     (cx + hw * 0.4f).roundToInt(), (cy - hh * 0.3f).roundToInt())
+        pix.setColor(0.6f, 0.5f, 0.1f, 0.6f)
+        pix.drawLine((cx - hw * 0.3f).roundToInt(), (cy - hh * 0.1f).roundToInt(),
+                     (cx + hw * 0.5f).roundToInt(), (cy - hh * 0.1f).roundToInt())
+
+        // Chip (darker rectangle)
+        pix.setColor(0.2f, 0.2f, 0.22f, 1f)
+        pix.fillRectangle((cx - 6).roundToInt(), (cy - 4).roundToInt(), 12, 8)
+        // Chip pins
+        pix.setColor(0.4f, 0.4f, 0.45f, 0.8f)
+        for (i in -2..2) {
+            pix.fillRectangle((cx + i * 3 - 1).roundToInt(), (cy - 7).roundToInt(), 2, 3)
+            pix.fillRectangle((cx + i * 3 - 1).roundToInt(), (cy + 5).roundToInt(), 2, 3)
+        }
+
+        // Scorch marks
+        pix.setColor(0.15f, 0.12f, 0.08f, 0.6f)
+        pix.fillCircle((cx - hw * 0.5f).roundToInt(), (cy - hh * 0.3f).roundToInt(), (r * 0.2f).roundToInt())
+
+        // Broken corner
+        pix.setColor(0f, 0f, 0f, 1f)
+        fillTriangle(pix,
+            (cx + hw * 0.8f).roundToInt(), (cy + hh * 0.6f).roundToInt(),
+            (cx + hw).roundToInt(), (cy + hh * 0.2f).roundToInt(),
+            (cx + hw * 0.5f).roundToInt(), (cy + hh).roundToInt()
+        )
 
         return pix
     }

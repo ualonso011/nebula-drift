@@ -15,7 +15,9 @@ import com.nebuladrift.util.Constants
  */
 class SpaceDebris(
     position: Vector2,
-    velocity: Vector2 = Vector2(-Constants.DEBRIS_SPEED, 0f)
+    velocity: Vector2 = Vector2(-Constants.DEBRIS_SPEED, 0f),
+    /** Atlas region key for the shape variant (gear/antenna/panel). */
+    val spriteKey: String = "debris_gear"
 ) : Entity {
 
     override val position: Vector2 = position.cpy()

@@ -53,48 +53,13 @@ class ScoreTest {
         assertEquals(1.75f, scoreSystem.elapsedTime, 0.001f, "Elapsed time should accumulate across updates")
     }
 
-    // ── Time bonus (1 point per second) ──────────────────────
-
     @Test
-    fun `time score awards 1 point per second`() {
+    fun `time does not award score`() {
         val context = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
-        scoreSystem.update(1.0f, context)
+        scoreSystem.update(10.0f, context)
 
-        assertEquals(Constants.SCORE_TIME_BONUS, context.score, "Score should increase by time bonus for 1 second")
-    }
-
-    @Test
-    fun `time score for multiple seconds`() {
-        val context = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
-
-        scoreSystem.update(3.0f, context)
-
-        assertEquals(3 * Constants.SCORE_TIME_BONUS, context.score, "Score should increase for each full second")
-    }
-
-    @Test
-    fun `partial seconds do not award time points until a full second`() {
-        val context = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
-
-        scoreSystem.update(0.3f, context)
-        assertEquals(0, context.score, "0.3 seconds should not award points")
-
-        scoreSystem.update(0.3f, context)
-        assertEquals(0, context.score, "0.6 seconds should not award points")
-
-        scoreSystem.update(0.4f, context)
-        assertEquals(Constants.SCORE_TIME_BONUS, context.score, "1.0 seconds should award points")
-    }
-
-    @Test
-    fun `time score accumulates fractional seconds across frames`() {
-        val context = GameContext(ship = Ship(), asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
-
-        scoreSystem.update(0.7f, context)
-        scoreSystem.update(0.7f, context) // 1.4 total
-
-        assertEquals(Constants.SCORE_TIME_BONUS, context.score, "Should award 1 point for the first full second")
+        assertEquals(0, context.score, "Time elapsed should not affect score")
     }
 
     // ── Asteroid destruction counting ────────────────────────
@@ -142,7 +107,7 @@ class ScoreTest {
     }
 
     @Test
-    fun `time bonus accumulates alongside asteroid tracking`() {
+    fun `update tracks asteroids without awarding time points`() {
         val asteroid = Asteroid(
             position = Vector2.Zero.cpy(),
             velocity = Vector2.Zero.cpy(),
@@ -158,11 +123,11 @@ class ScoreTest {
 
         scoreSystem.update(2.5f, context)
 
-        // ScoreSystem handles time bonus; destruction points are added by CollisionSystem
+        // ScoreSystem does NOT add score; CollisionSystem handles that
         assertEquals(
-            2 * Constants.SCORE_TIME_BONUS,
+            0,
             context.score,
-            "Score should include time bonus only (destruction points handled by CollisionSystem)"
+            "ScoreSystem should not modify score — only tracks stats"
         )
         assertEquals(1, scoreSystem.asteroidsDestroyed, "Asteroid count should be tracked")
         assertEquals(2.5f, scoreSystem.elapsedTime, 0.001f, "Elapsed time should accumulate")

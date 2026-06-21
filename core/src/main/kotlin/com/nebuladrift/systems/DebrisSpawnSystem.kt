@@ -14,6 +14,9 @@ import kotlin.random.Random
  */
 class DebrisSpawnSystem : GameSystem {
 
+    /** 3 visually distinct debris variants. */
+    private val debrisVariants = listOf("debris_gear", "debris_antenna", "debris_panel")
+
     /** Base interval before random jitter is added. */
     private val baseInterval: Float = Constants.DEBRIS_SPAWN_INTERVAL
 
@@ -40,8 +43,8 @@ class DebrisSpawnSystem : GameSystem {
     private fun spawnDebris(context: GameContext) {
         val x = Constants.WORLD_WIDTH + 1f
         val y = Random.nextFloat() * Constants.WORLD_HEIGHT
-
-        val debris = SpaceDebris(position = Vector2(x, y))
+        val variant = debrisVariants[Random.nextInt(debrisVariants.size)]
+        val debris = SpaceDebris(position = Vector2(x, y), spriteKey = variant)
         context.debris.add(debris)
     }
 

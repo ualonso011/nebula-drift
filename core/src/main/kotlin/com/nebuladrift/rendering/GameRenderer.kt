@@ -253,9 +253,9 @@ class GameRenderer(
                 glowSize, glowSize
             )
 
-            // Core
+            // Core (use shape variant sprite key)
             batch.color = Color(1f, 0.85f, 0f, 1f)
-            val coreRegion = atlas.findRegion("debris")
+            val coreRegion = atlas.findRegion(d.spriteKey)
             val coreSize = d.radius * 2f
             batch.draw(
                 coreRegion,
