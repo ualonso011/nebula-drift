@@ -22,6 +22,9 @@ object Constants {
     /** Radius of the ship's collision circle. */
     const val SHIP_RADIUS = 0.5f
 
+    /** How far (world units) above/below screen before ship dies. */
+    const val SHIP_DEATH_MARGIN = 3f
+
     /** Starting lives. */
     const val SHIP_LIVES = 3
 

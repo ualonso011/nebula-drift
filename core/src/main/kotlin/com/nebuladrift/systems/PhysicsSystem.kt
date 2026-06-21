@@ -54,24 +54,25 @@ class PhysicsSystem : GameSystem {
             ship.radius,
             Constants.WORLD_WIDTH - ship.radius
         )
-        
-        // Check if ship fell off the bottom of the screen
-        if (ship.position.y < -ship.radius) {
-            // Ship fell off the bottom - take damage
-            ship.takeDamage()
-            // Reset position to middle-left if not destroyed
-            if (!ship.isDestroyed) {
-                ship.position.y = Constants.WORLD_HEIGHT / 2f
-                ship.velocity.y = 0f
-            }
-        } else {
-            // Clamp to top of screen only
-            ship.position.y = MathUtils.clamp(
-                ship.position.y,
-                -ship.radius, // Allow going slightly below for detection
-                Constants.WORLD_HEIGHT - ship.radius
-            )
+
+        // ── Vertical death zones ───────────────────────────────
+        // Ship can fly off-screen above/below, but dies if it goes
+        // too far (DEATH_MARGIN beyond the visible area).
+        val deathMargin = Constants.SHIP_DEATH_MARGIN
+        if (ship.position.y < -deathMargin || ship.position.y > Constants.WORLD_HEIGHT + deathMargin) {
+            ship.destroy()
+            return
         }
+
+        // ── Bottom damage zone ─────────────────────────────────
+        // If ship goes below the visible area (but not far enough
+        // to die), deal damage and let the player recover.
+        if (ship.position.y < 0f && ship.position.y >= -deathMargin) {
+            ship.takeDamage()
+        }
+
+        // No vertical clamp — ship can fly above the screen freely
+        // until it hits the death zone.
 
         // Update ship timers (invulnerability)
         ship.update(delta)

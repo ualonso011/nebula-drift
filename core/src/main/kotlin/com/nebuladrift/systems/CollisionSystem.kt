@@ -410,7 +410,8 @@ class CollisionSystem : GameSystem {
                     position = Vector2(basePos.x + cos(angle.toDouble()).toFloat() * 0.1f,
                                        basePos.y + sin(angle.toDouble()).toFloat() * 0.1f),
                     velocity = Vector2(vx, vy),
-                    size = childSize
+                    size = childSize,
+                    type = destroyed.type
                 )
             )
         }

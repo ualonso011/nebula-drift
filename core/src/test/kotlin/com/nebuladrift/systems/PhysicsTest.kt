@@ -63,38 +63,30 @@ class PhysicsTest {
     @Test
     fun `ship takes damage when falling off bottom`() {
         val ship = Ship()
-        ship.position.y = -10f
-        ship.velocity.y = -50f
+        ship.position.y = -1f // below screen but within death margin
+        ship.velocity.y = -5f
         val initialLives = ship.lives
         val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
-        // Ship should take damage and be repositioned to center
-        assertEquals(initialLives - 1, ship.lives, "Ship should lose a life when falling off bottom")
-        assertEquals(
-            Constants.WORLD_HEIGHT / 2f,
-            ship.position.y,
-            0.001f,
-            "Ship should be repositioned to center after falling"
-        )
+        // Ship should take damage (below screen = damage zone)
+        assertEquals(initialLives - 1, ship.lives, "Ship should lose a life when below screen")
+        // Ship should NOT be destroyed (within death margin)
+        assertFalse(ship.isDestroyed, "Ship should not be destroyed within death margin")
     }
 
     @Test
-    fun `ship clamped to top screen bound`() {
+    fun `ship destroyed when too far above screen`() {
         val ship = Ship()
-        ship.position.y = 20f
+        ship.position.y = 20f // well above death margin
         ship.velocity.y = 50f
         val context = GameContext(ship = ship, asteroids = mutableListOf(), lasers = mutableListOf(), events = mutableListOf(), score = 0)
 
         physicsSystem.update(0.1f, context)
 
-        assertEquals(
-            Constants.WORLD_HEIGHT - Constants.SHIP_RADIUS,
-            ship.position.y,
-            0.001f,
-            "Ship should be clamped to top of screen"
-        )
+        // Ship should be destroyed (beyond death margin)
+        assertTrue(ship.isDestroyed, "Ship should be destroyed when too far above screen")
     }
 
     @Test
