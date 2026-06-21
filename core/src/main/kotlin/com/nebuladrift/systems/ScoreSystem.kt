@@ -38,18 +38,8 @@ class ScoreSystem : GameSystem {
     /** Enemies destroyed tracked by type. */
     private val enemiesDestroyedByTypeMap = mutableMapOf<EnemyType, Int>()
 
-    /** Accumulator for the 1-point-per-second time bonus. */
-    private var timeAccumulator: Float = 0f
-
     override fun update(delta: Float, context: GameContext) {
         elapsedTime += delta
-
-        // Time bonus: +1 point per second survived
-        timeAccumulator += delta
-        while (timeAccumulator >= 1f) {
-            timeAccumulator -= 1f
-            context.score += Constants.SCORE_TIME_BONUS
-        }
 
         // Count events
         for (event in context.events) {
@@ -107,6 +97,5 @@ class ScoreSystem : GameSystem {
         astronautsKilled = 0
         enemiesDestroyed = 0
         enemiesDestroyedByTypeMap.clear()
-        timeAccumulator = 0f
     }
 }

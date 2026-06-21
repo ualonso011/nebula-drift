@@ -241,7 +241,7 @@ object Constants {
     const val SFX_VOLUME_DEFAULT = 0.7f
 
     /** Filename for background music (assets/music/bgm.mp3). */
-    const val MUSIC_FILENAME = "music/bgm.mp3"
+    const val MUSIC_FILENAME = "music/bgm.wav"
 
     /** SFX filenames in assets/sfx/. */
     const val SFX_LASER = "sfx/laser.wav"
