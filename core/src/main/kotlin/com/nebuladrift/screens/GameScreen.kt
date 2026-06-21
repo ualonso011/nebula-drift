@@ -319,20 +319,11 @@ class GameScreen(
     private fun renderGameOver(delta: Float) {
         gameOverUITimer += delta
 
-        // Clear to a slightly visible dark blue
-        Gdx.gl.glClearColor(0f, 0f, 0.08f, 1f)
+        // Clear to dark blue (same hue as MenuScreen)
+        Gdx.gl.glClearColor(0f, 0f, 0.04f, 1f)
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT)
 
-        // TEST: ShapeRenderer only — does this break Stage?
-        goViewport.apply()
-        goCamera.update()
-        goShapeRenderer.projectionMatrix = goCamera.combined
-        goShapeRenderer.begin(ShapeType.Filled)
-        goShapeRenderer.color = Color(0f, 0f, 0.08f, 1f)
-        goShapeRenderer.rect(0f, 0f, 16f, 9f)
-        goShapeRenderer.end()
-
-        // Stage (previously worked on RED clear)
+        // Scene2D Stage only — same tech as MenuScreen
         goStage.act(delta)
         goStage.draw()
     }
