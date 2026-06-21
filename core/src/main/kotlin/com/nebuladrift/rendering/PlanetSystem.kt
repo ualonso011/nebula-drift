@@ -25,6 +25,10 @@ class PlanetSystem {
     // ── Spawn timer ───────────────────────────────────────────
     /** Timer counting up; when >= interval, spawn a planet. */
     private var spawnTimer = 0f
+
+    /** Random generator (declared BEFORE nextInterval to avoid NPE in jitter()). */
+    private val rng = Random(System.nanoTime())
+
     /** Next spawn interval with jitter applied. */
     private var nextInterval = Constants.PLANET_SPAWN_INTERVAL + jitter()
 
@@ -35,8 +39,6 @@ class PlanetSystem {
     private var worldWidth = Constants.WORLD_WIDTH
     /** World height used for spawn Y calculation. */
     private var worldHeight = Constants.WORLD_HEIGHT
-
-    private val rng = Random(System.nanoTime())
 
     /** Pre-generate all planet textures. Idempotent — safe to call multiple times. */
     fun init() {
