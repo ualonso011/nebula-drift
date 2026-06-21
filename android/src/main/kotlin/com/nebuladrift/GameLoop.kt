@@ -29,33 +29,38 @@ class GameLoop : NebulaDriftGame() {
     override fun create() {
         Gdx.app.log("GameLoop", "=== create() ===")
 
-        // Initialize core systems (audio, fonts, atlas, i18n)
-        AudioManager.init()
-        FontManager.init()
+        try {
+            // Initialize core systems (audio, fonts, atlas, i18n)
+            AudioManager.init()
+            FontManager.init()
 
-        i18n = I18nManager().also { it.init() }
-        atlas = SpriteGenerator.generateAtlas()
+            i18n = I18nManager().also { it.init() }
+            atlas = SpriteGenerator.generateAtlas()
 
-        // Initialize transition system (required by NebulaDriftGame.render)
-        val pix = Pixmap(1, 1, Pixmap.Format.RGBA8888)
-        pix.setColor(Color.WHITE)
-        pix.fill()
-        whiteTexture = Texture(pix)
-        pix.dispose()
+            // Initialize transition system (required by NebulaDriftGame.render)
+            val pix = Pixmap(1, 1, Pixmap.Format.RGBA8888)
+            pix.setColor(Color.WHITE)
+            pix.fill()
+            whiteTexture = Texture(pix)
+            pix.dispose()
 
-        transitionBatch = SpriteBatch()
+            transitionBatch = SpriteBatch()
 
-        // Game screen (gameplay) — game-over is rendered inline
-        addScreen(GameScreen(
-            game = this,
-            i18n = i18n,
-            atlas = atlas,
-            onExitToMenu = {
-                GameSession.reset()
-                onExitToMenu?.invoke()
-            },
-        ))
+            // Game screen (gameplay) — game-over is rendered inline
+            addScreen(GameScreen(
+                game = this,
+                i18n = i18n,
+                atlas = atlas,
+                onExitToMenu = {
+                    GameSession.reset()
+                    onExitToMenu?.invoke()
+                },
+            ))
 
-        setScreen<GameScreen>()
+            setScreen<GameScreen>()
+        } catch (e: Exception) {
+            Gdx.app.error("GameLoop", "FATAL: create() failed", e)
+            throw e
+        }
     }
 }

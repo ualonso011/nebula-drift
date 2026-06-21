@@ -152,7 +152,11 @@ class GameScreen(
 
     override fun show() {
         resetGame()
-        planetSystem.init()
+        try {
+            planetSystem.init()
+        } catch (e: Exception) {
+            Gdx.app.error("GameScreen", "PlanetSystem.init() failed", e)
+        }
 
         // Notify HUD of current screen size
         hudRenderer.resize(Gdx.graphics.width, Gdx.graphics.height)
